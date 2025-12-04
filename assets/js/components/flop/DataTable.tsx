@@ -1,52 +1,8 @@
 /**
- * NbFlop DataTable Component
+ * NbFlop DataTable Component - Linear-inspired design
  *
  * A TanStack Table wrapper that integrates with Flop for server-side
- * pagination, sorting, and filtering. Uses shadcn/ui table primitives.
- *
- * @example Basic usage
- * ```tsx
- * import { DataTable } from '@/components/flop';
- * import { columns } from './columns';
- *
- * function UsersIndex({ users, meta }: UsersIndexProps) {
- *   return (
- *     <DataTable
- *       columns={columns}
- *       data={users}
- *       meta={meta}
- *     />
- *   );
- * }
- * ```
- *
- * @example With Flop integration
- * ```tsx
- * import { DataTable, useFlopParams, flopToQueryParams } from '@/components/flop';
- * import { router } from '@/lib/inertia';
- * import { users_path } from '@/routes';
- *
- * function UsersIndex({ users, meta }: UsersIndexProps) {
- *   const flop = useFlopParams(meta, {
- *     onParamsChange: (params) => {
- *       router.visit(users_path({ query: flopToQueryParams(params) }), {
- *         preserveState: true,
- *         preserveScroll: true,
- *       });
- *     },
- *   });
- *
- *   return (
- *     <DataTable
- *       columns={columns}
- *       data={users}
- *       meta={meta}
- *       onSortChange={flop.setSort}
- *       getSortDirection={flop.getSortDirection}
- *     />
- *   );
- * }
- * ```
+ * pagination, sorting, and filtering.
  */
 
 import * as React from 'react';
@@ -59,36 +15,23 @@ import {
   type Table as TanStackTable,
 } from '@tanstack/react-table';
 import type { FlopMeta, SortDirection } from './types';
+import { cn } from '@/lib/utils';
 
-// Re-export ColumnDef for convenience
 export type { ColumnDef } from '@tanstack/react-table';
 
 export interface DataTableProps<TData, TValue> {
-  /** Column definitions */
   columns: ColumnDef<TData, TValue>[];
-  /** Data to display */
   data: TData[];
-  /** Flop meta for pagination info */
   meta?: FlopMeta | null;
-  /** Callback when sort changes - integrate with flop.setSort */
   onSortChange?: (field: string, direction: SortDirection) => void;
-  /** Get current sort direction for a field - integrate with flop.getSortDirection */
   getSortDirection?: (field: string) => SortDirection;
-  /** Custom empty state */
   emptyState?: React.ReactNode;
-  /** Table container className */
   className?: string;
-  /** Row className - can be a string or function for conditional styling */
   rowClassName?: string | ((row: Row<TData>) => string);
-  /** Callback when row is clicked */
   onRowClick?: (row: Row<TData>) => void;
-  /** Render function for table footer */
   footer?: (table: TanStackTable<TData>) => React.ReactNode;
 }
 
-/**
- * Context for passing sort state to column headers
- */
 export interface DataTableContextValue {
   onSortChange?: (field: string, direction: SortDirection) => void;
   getSortDirection?: (field: string) => SortDirection;
@@ -96,16 +39,10 @@ export interface DataTableContextValue {
 
 export const DataTableContext = React.createContext<DataTableContextValue>({});
 
-/**
- * Hook to access DataTable context in column definitions
- */
 export function useDataTableContext() {
   return React.useContext(DataTableContext);
 }
 
-/**
- * DataTable component using TanStack Table with Flop integration
- */
 export function DataTable<TData, TValue>({
   columns,
   data,
@@ -122,7 +59,6 @@ export function DataTable<TData, TValue>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    // We don't use TanStack's sorting/pagination - Flop handles it server-side
     manualPagination: true,
     manualSorting: true,
     pageCount: meta?.totalPages ?? -1,
@@ -142,22 +78,19 @@ export function DataTable<TData, TValue>({
 
   return (
     <DataTableContext.Provider value={contextValue}>
-      <div className={className}>
-        {/*
-          This component expects shadcn/ui table components to be available.
-          Users should have these installed via: npx shadcn@latest add table
-        */}
-        <table className="w-full caption-bottom text-sm">
-          <thead className="[&_tr]:border-b">
+      <div className={cn("overflow-hidden", className)}>
+        <table className="w-full text-sm">
+          {/* Header */}
+          <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr
                 key={headerGroup.id}
-                className="border-b transition-colors hover:bg-muted/50"
+                className="border-b border-border"
               >
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="h-10 px-2 text-left align-middle font-medium text-foreground whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]"
+                    className="h-10 px-4 text-left align-middle text-xs font-medium uppercase tracking-wider text-muted-foreground"
                   >
                     {header.isPlaceholder
                       ? null
@@ -170,19 +103,28 @@ export function DataTable<TData, TValue>({
               </tr>
             ))}
           </thead>
-          <tbody className="[&_tr:last-child]:border-0">
+
+          {/* Body */}
+          <tbody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
+              table.getRowModel().rows.map((row, index) => (
                 <tr
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className={`border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted ${getRowClassName(row)} ${onRowClick ? 'cursor-pointer' : ''}`}
+                  className={cn(
+                    "transition-colors",
+                    "hover:bg-accent/50",
+                    "data-[state=selected]:bg-accent",
+                    index !== table.getRowModel().rows.length - 1 && "border-b border-border",
+                    onRowClick && "cursor-pointer",
+                    getRowClassName(row)
+                  )}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className="p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]"
+                      className="px-4 py-3 align-middle text-foreground"
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
@@ -196,21 +138,47 @@ export function DataTable<TData, TValue>({
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="h-24 text-center text-muted-foreground"
+                  className="px-4 py-12 text-center"
                 >
-                  {emptyState ?? 'No results.'}
+                  <div className="flex flex-col items-center gap-2">
+                    <EmptyIcon className="h-8 w-8 text-muted-foreground/50" />
+                    <p className="text-sm text-muted-foreground">
+                      {emptyState ?? 'No results found.'}
+                    </p>
+                  </div>
                 </td>
               </tr>
             )}
           </tbody>
+
+          {/* Footer */}
           {footer && (
-            <tfoot className="bg-muted/50 border-t font-medium [&>tr]:last:border-b-0">
+            <tfoot className="border-t border-border bg-muted/30">
               {footer(table)}
             </tfoot>
           )}
         </table>
       </div>
     </DataTableContext.Provider>
+  );
+}
+
+// Empty state icon
+function EmptyIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+      />
+    </svg>
   );
 }
 

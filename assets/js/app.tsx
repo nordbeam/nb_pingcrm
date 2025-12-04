@@ -1,14 +1,24 @@
-import React from "react";
+import React, { createElement } from "react";
 import axios from "axios";
 
-import { createInertiaApp } from "@inertiajs/react";
-import { createRoot } from "react-dom/client";
+import { createInertiaApp, usePage } from "@inertiajs/react";
+import { hydrateRoot, createRoot } from "react-dom/client";
+import {
+  ModalStackProvider,
+  setupModalInterceptor,
+  ModalStackRenderer,
+  InitialModalHandler,
+} from "@/lib/inertia";
 
 // Import layouts
 import AppLayout from "./layouts/AppLayout";
 import GuestLayout from "./layouts/GuestLayout";
 
 axios.defaults.xsrfHeaderName = "x-csrf-token";
+
+// Setup modal backdrop preservation interceptor
+// This modifies XHR modal responses to preserve the current page as backdrop
+setupModalInterceptor();
 
 const pages = import.meta.glob("./pages/**/*.tsx");
 
@@ -19,6 +29,17 @@ const guestPages = [
   "Auth/ForgotPassword",
   "Auth/ResetPassword",
 ];
+
+// Component resolver for modals
+const resolveComponent = async (name: string): Promise<React.ComponentType<any>> => {
+  const path = `./pages/${name}.tsx`;
+  const resolver = pages[path];
+  if (!resolver) {
+    throw new Error(`Modal component not found: ${name}`);
+  }
+  const module = await resolver() as { default: React.ComponentType<any> };
+  return module.default;
+};
 
 createInertiaApp({
   resolve: async (name) => {
@@ -43,6 +64,49 @@ createInertiaApp({
     return module;
   },
   setup({ App, el, props }) {
-    createRoot(el).render(<App {...props} />);
+    // Render function that includes modals INSIDE the Inertia App context
+    // This allows usePage() to work in modal components
+    const renderInertiaApp = ({ Component, props: pageProps, key }: any) => {
+      const renderComponent = () => {
+        const child = createElement(Component, { key, ...pageProps });
+
+        // Handle layouts
+        if (typeof Component.layout === 'function') {
+          return Component.layout(child);
+        }
+
+        if (Array.isArray(Component.layout)) {
+          return Component.layout
+            .concat(child)
+            .reverse()
+            .reduce((children: any, Layout: any) => createElement(Layout, pageProps, children));
+        }
+
+        return child;
+      };
+
+      return (
+        <>
+          {renderComponent()}
+          {/* InitialModalHandler and ModalStackRenderer are INSIDE App context */}
+          {/* So usePage() works in modal components */}
+          <InitialModalHandler resolveComponent={resolveComponent} />
+          <ModalStackRenderer />
+        </>
+      );
+    };
+
+    const app = (
+      <ModalStackProvider resolveComponent={resolveComponent}>
+        <App {...props}>{renderInertiaApp}</App>
+      </ModalStackProvider>
+    );
+
+    // Use hydrateRoot when server-side rendered, createRoot otherwise
+    if (el.dataset.serverRendered === 'true') {
+      hydrateRoot(el, app);
+    } else {
+      createRoot(el).render(app);
+    }
   },
 });

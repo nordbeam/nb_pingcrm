@@ -422,17 +422,22 @@ defmodule NbPingcrmWeb.Plugs.InertiaSharedProps do  // ❌ Don't do this
 end
 ```
 
-### Frontend - Enhanced Components
+### Frontend - Inertia Components
 
-**Always import from `@/lib/inertia`**, not from `@inertiajs/react`:
+**Import from `@/lib/inertia`** for convenience - it re-exports official Inertia components alongside nb_inertia enhancements:
 
 ```typescript
-// CORRECT
-import { router, Link, useForm } from '@/lib/inertia';
+// Recommended - centralized imports from lib/inertia.ts
+import { router, Link, useForm, Head, usePage } from '@/lib/inertia';
 
-// WRONG - bypasses nb_routes integration
-import { router, Link, useForm } from '@inertiajs/react';
+// Under the hood, lib/inertia.ts does:
+// - router, Link → re-exported from @inertiajs/react (native RouteResult support)
+// - useForm → from @nordbeam/nb-inertia (route binding)
+// - Head, usePage → from @nordbeam/nb-inertia (modal context support)
+// - Modal system → from @nordbeam/nb-inertia
 ```
+
+**Note**: Official `@inertiajs/react` router and Link support `RouteResult` objects natively (via `UrlMethodPair` type). nb_inertia only adds: useForm with route binding, Head/usePage with modal context, and the modal system.
 
 ### router (Programmatic Navigation)
 

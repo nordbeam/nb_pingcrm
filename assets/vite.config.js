@@ -21,10 +21,10 @@ export default defineConfig({
       hotFile: '../priv/hot',
       manifestPath: '../priv/static/assets/manifest.json',
       refresh: true,
-      // SSR configuration
-      ssr: 'js/ssr_prod.tsx',
+      // SSR configuration - unified entry for dev and prod
+      // Setting `ssr` automatically enables ssrDev with the same entry point
+      ssr: 'js/ssr.tsx',
       ssrOutputDirectory: '../priv/static',
-      ssrDev: true,
     })
   ],
   server: {

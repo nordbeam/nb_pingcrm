@@ -7,6 +7,7 @@ import type { AuthProps } from "./AuthProps";
  * Generated from NbSerializer Inertia page declaration
  */
 export interface OrganizationsIndexProps extends AuthProps {
+  filterMode: string | null;
   filters: Record<string, any>;
   meta: FlopMeta;
   organizations: Organization;

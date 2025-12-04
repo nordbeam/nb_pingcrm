@@ -1,13 +1,8 @@
 import { useState, useMemo } from "react";
 import { Head, usePage } from "@/lib/inertia";
-import { router, Link } from "@/lib/inertia";
+import { router } from "@/lib/inertia";
 import type { ContactsIndexProps, Contact } from "@/types";
-import {
-  contacts_index_path,
-  contacts_new_path,
-  contacts_delete_path,
-  contacts_restore_path,
-} from "@/routes";
+import { contacts as contactsRoutes } from "@/routes";
 import {
   useFlopParams,
   flopToQueryParams,
@@ -18,8 +13,9 @@ import {
   type FlopOperator,
   type FilterOption,
 } from "@/components/flop";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/PageHeader";
+import { SearchInput } from "@/components/SearchInput";
+import { ContactFormSkeleton } from "@/components/ContactFormSkeleton";
 import { contactsFilterConfig } from "./filterConfig";
 import { createColumns } from "./columns";
 
@@ -28,7 +24,6 @@ export default function ContactsIndex() {
   const contacts = props.contacts as unknown as Contact[];
   const { meta, filters } = props;
 
-  // Get filter options from props (organizations for relation filter)
   const filterOptions: Record<string, FilterOption[]> =
     ((props as Record<string, unknown>).filter_options as Record<
       string,
@@ -49,7 +44,7 @@ export default function ContactsIndex() {
         filter_mode: filterMode !== "all" ? filterMode : undefined,
       };
 
-      router.visit(contacts_index_path({ query }), {
+      router.visit(contactsRoutes.index({ query }), {
         preserveState: true,
         preserveScroll: true,
       });
@@ -59,7 +54,7 @@ export default function ContactsIndex() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     router.visit(
-      contacts_index_path({
+      contactsRoutes.index({
         query: {
           search: search || undefined,
           trashed: filters?.trashed || undefined,
@@ -70,6 +65,23 @@ export default function ContactsIndex() {
     );
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearch(value);
+
+    if (!value && filters?.search) {
+      router.visit(
+        contactsRoutes.index({
+          query: {
+            trashed: filters?.trashed || undefined,
+            filter_mode: filterMode !== "all" ? filterMode : undefined,
+          },
+        }),
+        { preserveState: true }
+      );
+    }
+  };
+
   const handleCustomFilterChange = (param: string, value: unknown) => {
     const query: Record<string, unknown> = {
       search: filters?.search,
@@ -78,13 +90,13 @@ export default function ContactsIndex() {
     };
     query[param] = value;
 
-    router.visit(contacts_index_path({ query }), { preserveState: true });
+    router.visit(contactsRoutes.index({ query }), { preserveState: true });
   };
 
   const handleFilterModeChange = (mode: FilterMode) => {
     setFilterMode(mode);
     router.visit(
-      contacts_index_path({
+      contactsRoutes.index({
         query: {
           ...flopToQueryParams(flop.params),
           search: filters?.search,
@@ -98,19 +110,19 @@ export default function ContactsIndex() {
 
   const handleClearFilters = () => {
     flop.clearFilters();
-    router.visit(contacts_index_path({ query: { search: filters?.search } }), {
+    router.visit(contactsRoutes.index({ query: { search: filters?.search } }), {
       preserveState: true,
     });
   };
 
   const handleDelete = (contact: Contact) => {
     if (confirm(`Are you sure you want to delete ${contact.name}?`)) {
-      router.visit(contacts_delete_path.delete(contact.id));
+      router.visit(contactsRoutes.delete(contact.id));
     }
   };
 
   const handleRestore = (contact: Contact) => {
-    router.visit(contacts_restore_path.put(contact.id));
+    router.visit(contactsRoutes.restore(contact.id));
   };
 
   const columns = useMemo(
@@ -126,76 +138,75 @@ export default function ContactsIndex() {
     <>
       <Head title="Contacts" />
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Contacts</h1>
-          <Link href={contacts_new_path()}>
-            <Button>Create Contact</Button>
-          </Link>
-        </div>
+      <div className="px-6 py-6">
+        <div className="mx-auto max-w-5xl">
+          <PageHeader
+            title="Contacts"
+            description="Manage your contacts and their information."
+            action={{
+              label: "New contact",
+              href: contactsRoutes.new(),
+              loadingComponent: ContactFormSkeleton,
+              modalConfig: { slideover: true, position: "right" },
+              prefetch: true,
+            }}
+          />
 
-        {/* Filters */}
-        <div className="mb-6 space-y-3 rounded-lg bg-white p-4 shadow">
-          {/* Search */}
-          <form onSubmit={handleSearch}>
-            <Input
-              type="search"
-              placeholder="Search..."
+          {/* Search and Filters */}
+          <div className="mb-4 space-y-3">
+            <SearchInput
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="max-w-xs"
+              onChange={handleSearchChange}
+              onSubmit={handleSearch}
+              placeholder="Search contacts..."
             />
-          </form>
 
-          {/* Filter Bar */}
-          <FilterBar
-            configs={contactsFilterConfig}
-            filters={flop.params.filters ?? []}
-            customFilters={filters}
-            filterOptions={filterOptions}
-            filterMode={filterMode}
-            onFilterChange={(field, op, value) =>
-              flop.setFilter(field, op as FlopOperator, value)
-            }
-            onFilterRemove={(field, op) =>
-              flop.removeFilter(field, op as FlopOperator | undefined)
-            }
-            onCustomFilterChange={handleCustomFilterChange}
-            onClearFilters={handleClearFilters}
-            onFilterModeChange={handleFilterModeChange}
-          />
-        </div>
+            <FilterBar
+              configs={contactsFilterConfig}
+              filters={flop.params.filters ?? []}
+              customFilters={filters}
+              filterOptions={filterOptions}
+              filterMode={filterMode}
+              onFilterChange={(field, op, value) =>
+                flop.setFilter(field, op as FlopOperator, value)
+              }
+              onFilterRemove={(field, op) =>
+                flop.removeFilter(field, op as FlopOperator | undefined)
+              }
+              onCustomFilterChange={handleCustomFilterChange}
+              onClearFilters={handleClearFilters}
+              onFilterModeChange={handleFilterModeChange}
+            />
+          </div>
 
-        {/* Table */}
-        <div className="rounded-lg bg-white shadow">
-          <DataTable
-            columns={columns}
-            data={contacts}
-            meta={meta}
-            onSortChange={flop.setSort}
-            getSortDirection={flop.getSortDirection}
-            emptyState="No contacts found."
-            rowClassName={(row) =>
-              row.original.deletedAt ? "bg-gray-50 opacity-60" : ""
-            }
-          />
+          {/* Table */}
+          <div className="rounded-lg border border-border bg-card">
+            <DataTable
+              columns={columns}
+              data={contacts}
+              meta={meta}
+              onSortChange={flop.setSort}
+              getSortDirection={flop.getSortDirection}
+              emptyState="No contacts found."
+              rowClassName={(row) =>
+                row.original.deletedAt ? "bg-muted/50 opacity-60" : ""
+              }
+            />
 
-          {/* Pagination */}
-          {meta.totalPages && meta.totalPages > 1 && (
-            <div className="border-t p-4">
-              <Pagination
-                meta={meta}
-                onPageChange={flop.setPage}
-                className="flex items-center justify-center gap-2"
-              />
-            </div>
-          )}
-        </div>
+            {meta.totalPages && meta.totalPages > 1 && (
+              <div className="border-t border-border px-4 py-3">
+                <Pagination
+                  meta={meta}
+                  onPageChange={flop.setPage}
+                  className="flex items-center justify-center gap-1"
+                />
+              </div>
+            )}
+          </div>
 
-        {/* Stats */}
-        <div className="mt-4 text-sm text-gray-500">
-          {meta.totalCount} contact{meta.totalCount !== 1 ? "s" : ""} total
+          <div className="mt-3 text-xs text-muted-foreground">
+            {meta.totalCount} contact{meta.totalCount !== 1 ? "s" : ""} total
+          </div>
         </div>
       </div>
     </>

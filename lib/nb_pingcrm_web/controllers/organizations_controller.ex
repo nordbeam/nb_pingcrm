@@ -46,7 +46,10 @@ defmodule NbPingcrmWeb.OrganizationsController do
   end
 
   def new(conn, _params) do
-    render_inertia(conn, :organizations_create)
+    render_inertia_modal(conn, :organizations_create, [],
+      base_url: ~p"/organizations",
+      slideover: true
+    )
   end
 
   def create(conn, org_params) do
@@ -69,8 +72,12 @@ defmodule NbPingcrmWeb.OrganizationsController do
     account_id = conn.assigns.current_scope.user.account_id
     organization = CRM.get_organization_for_account!(account_id, id)
 
-    render_inertia(conn, :organizations_edit,
-      organization: {OrganizationSerializer, organization}
+    render_inertia_modal(
+      conn,
+      :organizations_edit,
+      [organization: {OrganizationSerializer, organization}],
+      base_url: ~p"/organizations",
+      slideover: true
     )
   end
 

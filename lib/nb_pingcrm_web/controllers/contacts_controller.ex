@@ -72,7 +72,13 @@ defmodule NbPingcrmWeb.ContactsController do
     account_id = conn.assigns.current_scope.user.account_id
     organizations = CRM.list_organizations_for_select(account_id)
 
-    render_inertia(conn, :contacts_create, organizations: {OrganizationSerializer, organizations})
+    render_inertia_modal(
+      conn,
+      :contacts_create,
+      [organizations: {OrganizationSerializer, organizations}],
+      base_url: ~p"/contacts",
+      slideover: true
+    )
   end
 
   def create(conn, contact_params) do
@@ -100,9 +106,15 @@ defmodule NbPingcrmWeb.ContactsController do
     contact = CRM.get_contact_for_account!(account_id, id)
     organizations = CRM.list_organizations_for_select(account_id)
 
-    render_inertia(conn, :contacts_edit,
-      contact: {ContactSerializer, contact},
-      organizations: {OrganizationSerializer, organizations}
+    render_inertia_modal(
+      conn,
+      :contacts_edit,
+      [
+        contact: {ContactSerializer, contact},
+        organizations: {OrganizationSerializer, organizations}
+      ],
+      base_url: ~p"/contacts",
+      slideover: true
     )
   end
 

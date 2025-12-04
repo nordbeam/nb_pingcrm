@@ -1,8 +1,15 @@
-import React from "react";
-import { usePage, Head } from "@/lib/inertia";
+import { usePage, Head, Link } from "@/lib/inertia";
 import type { DashboardProps } from "@/types";
+import {
+  Users,
+  Building2,
+  User,
+  TrendingUp,
+  Clock,
+  Plus,
+  type LucideIcon,
+} from "lucide-react";
 
-// DashboardProps extends AuthProps - shared props are auto-included via inertia_shared(Auth)
 export default function Dashboard() {
   const { props } = usePage<DashboardProps>();
   const { user, stats } = props;
@@ -11,177 +18,190 @@ export default function Dashboard() {
     <>
       <Head title="Dashboard" />
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-2 text-gray-600">
-            Welcome back{user?.firstName ? `, ${user.firstName}` : ""}!
-          </p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Total Contacts"
-            value={String(stats?.contacts ?? 0)}
-            icon={ContactIcon}
-            color="indigo"
-          />
-          <StatCard
-            title="Total Organizations"
-            value={String(stats?.organizations ?? 0)}
-            icon={OrganizationIcon}
-            color="green"
-          />
-          <StatCard
-            title="Active Users"
-            value={String(stats?.users ?? 0)}
-            icon={UserIcon}
-            color="blue"
-          />
-          <StatCard
-            title="This Month"
-            value="$0"
-            icon={ChartIcon}
-            color="purple"
-          />
-        </div>
-
-        {/* Recent Activity */}
-        <div className="rounded-lg bg-white p-6 shadow">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            Recent Activity
-          </h2>
-          <div className="text-center text-gray-500 py-8">
-            <p>No recent activity to show.</p>
-            <p className="mt-2 text-sm">
-              Create organizations and contacts to see activity here.
+      <div className="px-6 py-6">
+        <div className="mx-auto max-w-5xl">
+          {/* Page Header */}
+          <div className="mb-8">
+            <h1 className="text-xl font-semibold text-foreground">
+              Good {getGreeting()}{user?.firstName ? `, ${user.firstName}` : ""}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Here's what's happening with your CRM today.
             </p>
           </div>
-        </div>
 
-        {/* Quick Actions */}
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <QuickActionCard
-            title="Add Organization"
-            description="Create a new organization to manage"
-            href="/organizations/create"
-            icon={PlusIcon}
-          />
-          <QuickActionCard
-            title="Add Contact"
-            description="Add a new contact to your CRM"
-            href="/contacts/create"
-            icon={PlusIcon}
-          />
-          <QuickActionCard
-            title="View Reports"
-            description="View analytics and reports"
-            href="/reports"
-            icon={ChartIcon}
-          />
+          {/* Stats Grid */}
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Contacts"
+              value={stats?.contacts ?? 0}
+              href="/contacts"
+              icon={Users}
+            />
+            <StatCard
+              title="Organizations"
+              value={stats?.organizations ?? 0}
+              href="/organizations"
+              icon={Building2}
+            />
+            <StatCard
+              title="Users"
+              value={stats?.users ?? 0}
+              href="/users"
+              icon={User}
+            />
+            <StatCard
+              title="Revenue"
+              value="$0"
+              href="/reports"
+              icon={TrendingUp}
+              isMonetary
+            />
+          </div>
+
+          {/* Content Grid */}
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Recent Activity */}
+            <div className="lg:col-span-2">
+              <div className="rounded-lg border border-border bg-card">
+                <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                  <h2 className="text-sm font-medium text-foreground">
+                    Recent Activity
+                  </h2>
+                  <Link
+                    href="/reports"
+                    className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                  >
+                    View all
+                  </Link>
+                </div>
+                <div className="p-5">
+                  <EmptyState
+                    icon={Clock}
+                    title="No recent activity"
+                    description="Activity will appear here as you create and update records."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div>
+              <div className="rounded-lg border border-border bg-card">
+                <div className="border-b border-border px-5 py-4">
+                  <h2 className="text-sm font-medium text-foreground">
+                    Quick Actions
+                  </h2>
+                </div>
+                <div className="p-2">
+                  <QuickAction
+                    href="/organizations/new"
+                    icon={Plus}
+                    title="New organization"
+                    description="Add a company to manage"
+                  />
+                  <QuickAction
+                    href="/contacts/new"
+                    icon={Plus}
+                    title="New contact"
+                    description="Add a person to your CRM"
+                  />
+                  <QuickAction
+                    href="/users/new"
+                    icon={Plus}
+                    title="Invite user"
+                    description="Add a team member"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>
   );
 }
 
+// Get time-based greeting
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "morning";
+  if (hour < 18) return "afternoon";
+  return "evening";
+}
+
 // Stat Card Component
 interface StatCardProps {
   title: string;
-  value: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: "indigo" | "green" | "blue" | "purple";
+  value: number | string;
+  href: string;
+  icon: LucideIcon;
+  isMonetary?: boolean;
 }
 
-function StatCard({ title, value, icon: Icon, color }: StatCardProps) {
-  const colors = {
-    indigo: "bg-indigo-500",
-    green: "bg-green-500",
-    blue: "bg-blue-500",
-    purple: "bg-purple-500",
-  };
-
+function StatCard({ title, value, href, icon: Icon, isMonetary }: StatCardProps) {
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
-      <div className="flex items-center">
-        <div className={`rounded-lg ${colors[color]} p-3`}>
-          <Icon className="h-6 w-6 text-white" />
+    <Link
+      href={href}
+      className="group rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/20 hover:bg-accent/50"
+    >
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {title}
+          </p>
+          <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">
+            {isMonetary ? value : value.toLocaleString()}
+          </p>
         </div>
-        <div className="ml-4">
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <p className="text-2xl font-semibold text-gray-900">{value}</p>
+        <div className="rounded-md bg-primary/5 p-2 transition-colors group-hover:bg-primary/10">
+          <Icon className="h-4 w-4 text-primary" />
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
-// Quick Action Card Component
-interface QuickActionCardProps {
+// Quick Action Component
+interface QuickActionProps {
+  href: string;
+  icon: LucideIcon;
   title: string;
   description: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
 }
 
-function QuickActionCard({ title, description, href, icon: Icon }: QuickActionCardProps) {
+function QuickAction({ href, icon: Icon, title, description }: QuickActionProps) {
   return (
-    <a
+    <Link
       href={href}
-      className="group flex items-center rounded-lg bg-white p-6 shadow transition hover:shadow-md"
+      className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-accent"
     >
-      <div className="rounded-lg bg-gray-100 p-3 transition group-hover:bg-indigo-100">
-        <Icon className="h-6 w-6 text-gray-600 transition group-hover:text-indigo-600" />
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/5">
+        <Icon className="h-4 w-4 text-primary" />
       </div>
-      <div className="ml-4">
-        <p className="font-medium text-gray-900 group-hover:text-indigo-600">
-          {title}
-        </p>
-        <p className="text-sm text-gray-500">{description}</p>
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="truncate text-xs text-muted-foreground">{description}</p>
       </div>
-    </a>
+    </Link>
   );
 }
 
-// Icons
-function ContactIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-    </svg>
-  );
+// Empty State Component
+interface EmptyStateProps {
+  icon: LucideIcon;
+  title: string;
+  description: string;
 }
 
-function OrganizationIcon({ className }: { className?: string }) {
+function EmptyState({ icon: Icon, title, description }: EmptyStateProps) {
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-    </svg>
-  );
-}
-
-function UserIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-    </svg>
-  );
-}
-
-function ChartIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-    </svg>
-  );
-}
-
-function PlusIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-    </svg>
+    <div className="flex flex-col items-center justify-center py-8 text-center">
+      <div className="rounded-full bg-muted p-3">
+        <Icon className="h-5 w-5 text-muted-foreground" />
+      </div>
+      <h3 className="mt-3 text-sm font-medium text-foreground">{title}</h3>
+      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+    </div>
   );
 }

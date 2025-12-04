@@ -8,6 +8,8 @@ import type { AuthProps } from "./AuthProps";
  */
 export interface ContactsIndexProps extends AuthProps {
   contacts: Contact;
+  filterMode: string | null;
+  filterOptions: Record<string, any> | null;
   filters: Record<string, any>;
   meta: FlopMeta;
   [key: string]: unknown;

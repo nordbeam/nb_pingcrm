@@ -27,7 +27,16 @@ defmodule NbPingcrmWeb.Endpoint do
     only: NbPingcrmWeb.static_paths()
 
   if Code.ensure_loaded?(Tidewave) do
-    plug Tidewave
+    # Skip Tidewave for internal modal base page requests (from NbInertia.Modal.HttpClient)
+    plug :maybe_tidewave
+  end
+
+  defp maybe_tidewave(conn, _opts) do
+    if Plug.Conn.get_req_header(conn, "x-inertia-modal-base-request") == ["true"] do
+      conn
+    else
+      Tidewave.call(conn, Tidewave.init([]))
+    end
   end
 
   # Code reloading can be explicitly enabled under the

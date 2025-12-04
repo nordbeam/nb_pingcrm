@@ -1,13 +1,17 @@
 import { Head } from "@/lib/inertia";
-import { router, Link, useForm } from "@/lib/inertia";
-import { users_index_path, users_create_path } from "@/routes";
+import { router, useForm } from "@/lib/inertia";
+import { users } from "@/routes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2 } from "lucide-react";
 
-export default function UsersCreate() {
+interface UsersCreateProps {
+  onClose?: () => void;
+}
 
+export default function UsersCreate({ onClose }: UsersCreateProps) {
   const form = useForm(
     {
       first_name: "",
@@ -16,7 +20,7 @@ export default function UsersCreate() {
       password: "",
       owner: false,
     },
-    users_create_path.post()
+    users.create()
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -24,117 +28,121 @@ export default function UsersCreate() {
     form.submit({
       preserveScroll: true,
       onSuccess: () => {
-        router.visit(users_index_path());
+        if (onClose) {
+          onClose();
+        }
+        router.visit(users.index());
       },
     });
+  };
+
+  const handleCancel = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      router.visit(users.index());
+    }
   };
 
   return (
     <>
       <Head title="Create User" />
 
-      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-6">
-          <Link
-            href={users_index_path()}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            &larr; Back to Users
-          </Link>
-          <h1 className="mt-2 text-3xl font-bold text-gray-900">Create User</h1>
-        </div>
+      <div className="p-6">
+        <h2 className="text-lg font-semibold mb-6">Create User</h2>
 
-        {/* Form */}
-        <div className="rounded-lg bg-white p-6 shadow">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="first_name">First Name</Label>
-                <Input
-                  id="first_name"
-                  value={form.data.first_name}
-                  onChange={(e) => form.setData("first_name", e.target.value)}
-                  className="mt-1"
-                />
-                {form.errors.first_name && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {form.errors.first_name}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="last_name">Last Name</Label>
-                <Input
-                  id="last_name"
-                  value={form.data.last_name}
-                  onChange={(e) => form.setData("last_name", e.target.value)}
-                  className="mt-1"
-                />
-                {form.errors.last_name && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {form.errors.last_name}
-                  </p>
-                )}
-              </div>
-            </div>
-
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid gap-5 sm:grid-cols-2">
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="first_name">First Name</Label>
               <Input
-                id="email"
-                type="email"
-                value={form.data.email}
-                onChange={(e) => form.setData("email", e.target.value)}
-                className="mt-1"
+                id="first_name"
+                value={form.data.first_name}
+                onChange={(e) => form.setData("first_name", e.target.value)}
+                className="mt-1.5"
               />
-              {form.errors.email && (
-                <p className="mt-1 text-sm text-red-600">{form.errors.email}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={form.data.password}
-                onChange={(e) => form.setData("password", e.target.value)}
-                className="mt-1"
-              />
-              {form.errors.password && (
-                <p className="mt-1 text-sm text-red-600">
-                  {form.errors.password}
+              {form.errors.first_name && (
+                <p className="mt-1.5 text-sm text-destructive">
+                  {form.errors.first_name}
                 </p>
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="owner"
-                checked={form.data.owner}
-                onCheckedChange={(checked) =>
-                  form.setData("owner", checked === true)
-                }
+            <div>
+              <Label htmlFor="last_name">Last Name</Label>
+              <Input
+                id="last_name"
+                value={form.data.last_name}
+                onChange={(e) => form.setData("last_name", e.target.value)}
+                className="mt-1.5"
               />
-              <Label htmlFor="owner" className="cursor-pointer">
-                Owner (Administrator)
-              </Label>
+              {form.errors.last_name && (
+                <p className="mt-1.5 text-sm text-destructive">
+                  {form.errors.last_name}
+                </p>
+              )}
             </div>
+          </div>
 
-            <div className="flex justify-end gap-3 border-t pt-6">
-              <Link href={users_index_path()}>
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
-              </Link>
-              <Button type="submit" disabled={form.processing}>
-                {form.processing ? "Creating..." : "Create User"}
-              </Button>
-            </div>
-          </form>
-        </div>
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={form.data.email}
+              onChange={(e) => form.setData("email", e.target.value)}
+              className="mt-1.5"
+            />
+            {form.errors.email && (
+              <p className="mt-1.5 text-sm text-destructive">{form.errors.email}</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={form.data.password}
+              onChange={(e) => form.setData("password", e.target.value)}
+              className="mt-1.5"
+            />
+            {form.errors.password && (
+              <p className="mt-1.5 text-sm text-destructive">
+                {form.errors.password}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="owner"
+              checked={form.data.owner}
+              onCheckedChange={(checked) =>
+                form.setData("owner", checked === true)
+              }
+            />
+            <Label htmlFor="owner" className="cursor-pointer">
+              Owner (Administrator)
+            </Label>
+          </div>
+
+          <div className="flex justify-end gap-3 border-t border-border pt-5">
+            <Button type="button" variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={form.processing}>
+              {form.processing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create User"
+              )}
+            </Button>
+          </div>
+        </form>
       </div>
     </>
   );

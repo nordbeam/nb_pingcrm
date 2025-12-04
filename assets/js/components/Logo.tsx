@@ -9,48 +9,36 @@ interface LogoProps {
 }
 
 /**
- * PingCRM Logo component
+ * PingCRM Logo component - Linear-inspired design
  *
  * Variants:
- * - "dark": For dark backgrounds (white text, glass icon container)
- * - "light": For light backgrounds (indigo text, indigo tinted icon container)
+ * - "dark": For dark backgrounds (white text, subtle glass effect)
+ * - "light": For light backgrounds (foreground text, violet accent)
  * - "auto": Inherits text color from parent
  */
 export function Logo({ className, iconOnly = false, variant = "auto" }: LogoProps) {
   const containerClasses = cn(
-    "inline-flex items-center space-x-3",
+    "inline-flex items-center gap-2.5",
     className
   );
 
-  const iconContainerClasses = cn(
-    "w-10 h-10 rounded-xl flex items-center justify-center",
-    {
-      // Dark variant (for dark backgrounds)
-      "bg-white/10 backdrop-blur border border-white/20": variant === "dark",
-      // Light variant (for light backgrounds)
-      "bg-indigo-100": variant === "light",
-      // Auto variant (inherits from parent)
-      "bg-current/10": variant === "auto",
-    }
-  );
-
   const textClasses = cn(
-    "text-xl font-semibold tracking-tight",
+    "text-[15px] font-semibold tracking-tight",
     {
       "text-white": variant === "dark",
-      "text-indigo-900": variant === "light",
+      "text-foreground": variant === "light",
       // Auto inherits from parent
     }
   );
 
   return (
     <span className={containerClasses}>
-      <span className={iconContainerClasses}>
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="12" cy="12" r="10" opacity="0.3" />
-          <circle cx="12" cy="12" r="4" />
-        </svg>
-      </span>
+      <LogoIcon
+        className={cn("h-6 w-6", {
+          "text-white": variant === "dark",
+          "text-primary": variant === "light" || variant === "auto",
+        })}
+      />
       {!iconOnly && (
         <span className={textClasses}>PingCRM</span>
       )}
@@ -59,13 +47,48 @@ export function Logo({ className, iconOnly = false, variant = "auto" }: LogoProp
 }
 
 /**
- * Just the logo icon without container styling
+ * Just the logo icon - Linear-inspired geometric mark
  */
 export function LogoIcon({ className }: { className?: string }) {
   return (
-    <svg className={cn("w-6 h-6", className)} viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="12" cy="12" r="10" opacity="0.3" />
-      <circle cx="12" cy="12" r="4" />
+    <svg
+      className={cn("h-6 w-6", className)}
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      {/* Outer ring - subtle */}
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeOpacity="0.2"
+      />
+      {/* Middle ring */}
+      <circle
+        cx="12"
+        cy="12"
+        r="6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeOpacity="0.4"
+      />
+      {/* Center dot - solid */}
+      <circle
+        cx="12"
+        cy="12"
+        r="2.5"
+        fill="currentColor"
+      />
+      {/* Pulse indicator */}
+      <circle
+        cx="18"
+        cy="6"
+        r="2"
+        fill="currentColor"
+        fillOpacity="0.8"
+      />
     </svg>
   );
 }

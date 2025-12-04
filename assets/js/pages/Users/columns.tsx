@@ -4,8 +4,8 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { User } from "@/types";
-import { Link } from "@/lib/inertia";
-import { users_edit_path } from "@/routes";
+import { ClientModalLink } from "@/lib/inertia";
+import { users } from "@/routes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SortableColumnHeader } from "@/components/flop";
@@ -72,11 +72,11 @@ export function createColumns({
         const user = row.original;
         return (
           <div className="flex justify-end gap-2">
-            <Link href={users_edit_path(user.id)}>
+            <ClientModalLink href={users.edit(user.id)}>
               <Button variant="ghost" size="sm">
                 Edit
               </Button>
-            </Link>
+            </ClientModalLink>
             {user.deletedAt ? (
               <Button variant="ghost" size="sm" onClick={() => onRestore(user)}>
                 Restore

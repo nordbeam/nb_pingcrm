@@ -47,7 +47,10 @@ defmodule NbPingcrmWeb.UsersController do
   end
 
   def new(conn, _params) do
-    render_inertia(conn, :users_create)
+    render_inertia_modal(conn, :users_create, [],
+      base_url: ~p"/users",
+      slideover: true
+    )
   end
 
   def create(conn, user_params) do
@@ -70,7 +73,10 @@ defmodule NbPingcrmWeb.UsersController do
     account_id = conn.assigns.current_scope.user.account_id
     user = Accounts.get_user_for_account!(account_id, id)
 
-    render_inertia(conn, :users_edit, user: {UserSerializer, user})
+    render_inertia_modal(conn, :users_edit, [user: {UserSerializer, user}],
+      base_url: ~p"/users",
+      slideover: true
+    )
   end
 
   def update(conn, %{"id" => id} = params) do

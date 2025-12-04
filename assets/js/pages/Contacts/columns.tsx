@@ -4,8 +4,8 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Contact } from "@/types";
-import { Link } from "@/lib/inertia";
-import { contacts_edit_path } from "@/routes";
+import { ClientModalLink } from "@/lib/inertia";
+import { contacts } from "@/routes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SortableColumnHeader } from "@/components/flop";
@@ -59,11 +59,11 @@ export function createColumns({
         const contact = row.original;
         return (
           <div className="flex justify-end gap-2">
-            <Link href={contacts_edit_path(contact.id)}>
+            <ClientModalLink href={contacts.edit(contact.id)}>
               <Button variant="ghost" size="sm">
                 Edit
               </Button>
-            </Link>
+            </ClientModalLink>
             {contact.deletedAt ? (
               <Button
                 variant="ghost"

@@ -4,8 +4,8 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Organization } from "@/types";
-import { Link } from "@/lib/inertia";
-import { organizations_edit_path } from "@/routes";
+import { ClientModalLink } from "@/lib/inertia";
+import { organizations } from "@/routes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SortableColumnHeader } from "@/components/flop";
@@ -56,11 +56,11 @@ export function createColumns({
         const organization = row.original;
         return (
           <div className="flex justify-end gap-2">
-            <Link href={organizations_edit_path(organization.id)}>
+            <ClientModalLink href={organizations.edit(organization.id)}>
               <Button variant="ghost" size="sm">
                 Edit
               </Button>
-            </Link>
+            </ClientModalLink>
             {organization.deletedAt ? (
               <Button
                 variant="ghost"

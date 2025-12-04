@@ -1,21 +1,21 @@
-import React from "react";
 import { Head, usePage } from "@/lib/inertia";
-import { router, Link, useForm } from "@/lib/inertia";
+import { router, useForm } from "@/lib/inertia";
 import type { UsersEditProps } from "@/types";
-import {
-  users_index_path,
-  users_users_update_path,
-  users_delete_path,
-  users_restore_path,
-} from "@/routes";
+import { users } from "@/routes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
+import { DeletedNotice } from "@/components/DeletedNotice";
+import { Loader2, Trash2 } from "lucide-react";
 
-export default function UsersEdit() {
+interface UsersEditPageProps {
+  onClose?: () => void;
+}
+
+export default function UsersEdit({ onClose }: UsersEditPageProps) {
   const { props } = usePage<UsersEditProps>();
+
   const { user } = props;
 
   const form = useForm(
@@ -25,77 +25,63 @@ export default function UsersEdit() {
       email: user.email,
       owner: user.owner,
     },
-    users_users_update_path.put(user.id)
+    users.update(user.id)
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     form.submit({
       preserveScroll: true,
+      onSuccess: () => {
+        if (onClose) {
+          onClose();
+        }
+        router.visit(users.index());
+      },
     });
   };
 
   const handleDelete = () => {
     if (confirm(`Are you sure you want to delete ${user.name}?`)) {
-      router.visit(users_delete_path.delete(user.id));
+      router.visit(users.delete(user.id));
     }
   };
 
   const handleRestore = () => {
-    router.visit(users_restore_path.put(user.id));
+    router.visit(users.restore(user.id));
+  };
+
+  const handleCancel = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      router.visit(users.index());
+    }
   };
 
   return (
     <>
       <Head title={`Edit ${user.name}`} />
 
-      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-6">
-          <Link
-            href={users_index_path()}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            &larr; Back to Users
-          </Link>
-          <div className="mt-2 flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Edit {user.name}
-            </h1>
-            {user.deletedAt && <Badge variant="destructive">Deleted</Badge>}
-          </div>
-        </div>
+      <div className="p-6">
+        <h2 className="text-lg font-semibold mb-6">Edit {user.name}</h2>
 
-        {/* Deleted user notice */}
         {user.deletedAt && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-            <p className="text-sm text-red-700">
-              This user has been deleted.{" "}
-              <button
-                type="button"
-                onClick={handleRestore}
-                className="font-medium underline hover:no-underline"
-              >
-                Click here to restore
-              </button>
-            </p>
-          </div>
+          <DeletedNotice entityName="user" onRestore={handleRestore} />
         )}
 
-        {/* Form */}
-        <div className="rounded-lg bg-white p-6 shadow">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid gap-6 sm:grid-cols-2">
+        <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <Label htmlFor="first_name">First Name</Label>
                 <Input
                   id="first_name"
                   value={form.data.first_name}
                   onChange={(e) => form.setData("first_name", e.target.value)}
-                  className="mt-1"
+                  className="mt-1.5"
                 />
                 {form.errors.first_name && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-1.5 text-sm text-destructive">
                     {form.errors.first_name}
                   </p>
                 )}
@@ -107,10 +93,10 @@ export default function UsersEdit() {
                   id="last_name"
                   value={form.data.last_name}
                   onChange={(e) => form.setData("last_name", e.target.value)}
-                  className="mt-1"
+                  className="mt-1.5"
                 />
                 {form.errors.last_name && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-1.5 text-sm text-destructive">
                     {form.errors.last_name}
                   </p>
                 )}
@@ -124,10 +110,10 @@ export default function UsersEdit() {
                 type="email"
                 value={form.data.email}
                 onChange={(e) => form.setData("email", e.target.value)}
-                className="mt-1"
+                className="mt-1.5"
               />
               {form.errors.email && (
-                <p className="mt-1 text-sm text-red-600">{form.errors.email}</p>
+                <p className="mt-1.5 text-sm text-destructive">{form.errors.email}</p>
               )}
             </div>
 
@@ -144,29 +130,35 @@ export default function UsersEdit() {
               </Label>
             </div>
 
-            <div className="flex items-center justify-between border-t pt-6">
+            <div className="flex items-center justify-between border-t border-border pt-5">
               {!user.deletedAt && (
                 <Button
                   type="button"
-                  variant="destructive"
+                  variant="ghost"
                   onClick={handleDelete}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
-                  Delete User
+                  <Trash2 className="h-4 w-4" />
+                  Delete
                 </Button>
               )}
               <div className="ml-auto flex gap-3">
-                <Link href={users_index_path()}>
-                  <Button type="button" variant="outline">
-                    Cancel
-                  </Button>
-                </Link>
+                <Button type="button" variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
                 <Button type="submit" disabled={form.processing}>
-                  {form.processing ? "Saving..." : "Save Changes"}
+                  {form.processing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
                 </Button>
               </div>
             </div>
           </form>
-        </div>
       </div>
     </>
   );

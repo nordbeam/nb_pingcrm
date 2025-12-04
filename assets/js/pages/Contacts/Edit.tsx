@@ -1,17 +1,10 @@
-import React from "react";
 import { Head, usePage } from "@/lib/inertia";
-import { router, Link, useForm } from "@/lib/inertia";
+import { router, useForm } from "@/lib/inertia";
 import type { ContactsEditProps, Organization } from "@/types";
-import {
-  contacts_index_path,
-  contacts_contacts_update_path,
-  contacts_delete_path,
-  contacts_restore_path,
-} from "@/routes";
+import { contacts } from "@/routes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -19,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DeletedNotice } from "@/components/DeletedNotice";
+import { Loader2, Trash2 } from "lucide-react";
 
 const COUNTRIES = [
   { code: "US", name: "United States" },
@@ -30,8 +25,13 @@ const COUNTRIES = [
   { code: "AU", name: "Australia" },
 ];
 
-export default function ContactsEdit() {
+interface ContactsEditPageProps {
+  onClose?: () => void;
+}
+
+export default function ContactsEdit({ onClose }: ContactsEditPageProps) {
   const { props } = usePage<ContactsEditProps>();
+
   const { contact } = props;
   const organizations = props.organizations as unknown as Organization[];
 
@@ -48,82 +48,67 @@ export default function ContactsEdit() {
       postal_code: contact.postalCode || "",
       organization_id: contact.organizationId ? String(contact.organizationId) : "_none",
     },
-    contacts_contacts_update_path.put(contact.id)
+    contacts.update(contact.id)
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Convert "_none" back to empty string for server
     const data = {
       ...form.data,
       organization_id: form.data.organization_id === "_none" ? "" : form.data.organization_id,
     };
-    router.put(contacts_contacts_update_path.url(contact.id), data, {
+    router.put(contacts.update.url(contact.id), data, {
       preserveScroll: true,
+      onSuccess: () => {
+        if (onClose) {
+          onClose();
+        }
+        router.visit(contacts.index());
+      },
     });
   };
 
   const handleDelete = () => {
     if (confirm(`Are you sure you want to delete ${contact.name}?`)) {
-      router.visit(contacts_delete_path.delete(contact.id));
+      router.visit(contacts.delete(contact.id));
     }
   };
 
   const handleRestore = () => {
-    router.visit(contacts_restore_path.put(contact.id));
+    router.visit(contacts.restore(contact.id));
+  };
+
+  const handleCancel = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      router.visit(contacts.index());
+    }
   };
 
   return (
     <>
       <Head title={`Edit ${contact.name}`} />
 
-      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-6">
-          <Link
-            href={contacts_index_path()}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            &larr; Back to Contacts
-          </Link>
-          <div className="mt-2 flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Edit {contact.name}
-            </h1>
-            {contact.deletedAt && <Badge variant="destructive">Deleted</Badge>}
-          </div>
-        </div>
+      <div className="p-6">
+        <h2 className="text-lg font-semibold mb-6">Edit {contact.name}</h2>
 
-        {/* Deleted notice */}
         {contact.deletedAt && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-            <p className="text-sm text-red-700">
-              This contact has been deleted.{" "}
-              <button
-                type="button"
-                onClick={handleRestore}
-                className="font-medium underline hover:no-underline"
-              >
-                Click here to restore
-              </button>
-            </p>
-          </div>
+          <DeletedNotice entityName="contact" onRestore={handleRestore} />
         )}
 
-        {/* Form */}
-        <div className="rounded-lg bg-white p-6 shadow">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid gap-6 sm:grid-cols-2">
+        <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <Label htmlFor="first_name">First Name</Label>
                 <Input
                   id="first_name"
                   value={form.data.first_name}
                   onChange={(e) => form.setData("first_name", e.target.value)}
-                  className="mt-1"
+                  className="mt-1.5"
                 />
                 {form.errors.first_name && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-1.5 text-sm text-destructive">
                     {form.errors.first_name}
                   </p>
                 )}
@@ -135,10 +120,10 @@ export default function ContactsEdit() {
                   id="last_name"
                   value={form.data.last_name}
                   onChange={(e) => form.setData("last_name", e.target.value)}
-                  className="mt-1"
+                  className="mt-1.5"
                 />
                 {form.errors.last_name && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-1.5 text-sm text-destructive">
                     {form.errors.last_name}
                   </p>
                 )}
@@ -153,7 +138,7 @@ export default function ContactsEdit() {
                   form.setData("organization_id", value)
                 }
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="mt-1.5">
                   <SelectValue placeholder="Select an organization" />
                 </SelectTrigger>
                 <SelectContent>
@@ -166,13 +151,13 @@ export default function ContactsEdit() {
                 </SelectContent>
               </Select>
               {form.errors.organization_id && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1.5 text-sm text-destructive">
                   {form.errors.organization_id}
                 </p>
               )}
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -180,10 +165,10 @@ export default function ContactsEdit() {
                   type="email"
                   value={form.data.email}
                   onChange={(e) => form.setData("email", e.target.value)}
-                  className="mt-1"
+                  className="mt-1.5"
                 />
                 {form.errors.email && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-1.5 text-sm text-destructive">
                     {form.errors.email}
                   </p>
                 )}
@@ -196,10 +181,10 @@ export default function ContactsEdit() {
                   type="tel"
                   value={form.data.phone}
                   onChange={(e) => form.setData("phone", e.target.value)}
-                  className="mt-1"
+                  className="mt-1.5"
                 />
                 {form.errors.phone && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-1.5 text-sm text-destructive">
                     {form.errors.phone}
                   </p>
                 )}
@@ -212,26 +197,26 @@ export default function ContactsEdit() {
                 id="address"
                 value={form.data.address}
                 onChange={(e) => form.setData("address", e.target.value)}
-                className="mt-1"
+                className="mt-1.5"
               />
               {form.errors.address && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1.5 text-sm text-destructive">
                   {form.errors.address}
                 </p>
               )}
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <Label htmlFor="city">City</Label>
                 <Input
                   id="city"
                   value={form.data.city}
                   onChange={(e) => form.setData("city", e.target.value)}
-                  className="mt-1"
+                  className="mt-1.5"
                 />
                 {form.errors.city && (
-                  <p className="mt-1 text-sm text-red-600">{form.errors.city}</p>
+                  <p className="mt-1.5 text-sm text-destructive">{form.errors.city}</p>
                 )}
               </div>
 
@@ -241,24 +226,24 @@ export default function ContactsEdit() {
                   id="region"
                   value={form.data.region}
                   onChange={(e) => form.setData("region", e.target.value)}
-                  className="mt-1"
+                  className="mt-1.5"
                 />
                 {form.errors.region && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-1.5 text-sm text-destructive">
                     {form.errors.region}
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <Label htmlFor="country">Country</Label>
                 <Select
                   value={form.data.country}
                   onValueChange={(value) => form.setData("country", value)}
                 >
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1.5">
                     <SelectValue placeholder="Select a country" />
                   </SelectTrigger>
                   <SelectContent>
@@ -270,7 +255,7 @@ export default function ContactsEdit() {
                   </SelectContent>
                 </Select>
                 {form.errors.country && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-1.5 text-sm text-destructive">
                     {form.errors.country}
                   </p>
                 )}
@@ -282,39 +267,45 @@ export default function ContactsEdit() {
                   id="postal_code"
                   value={form.data.postal_code}
                   onChange={(e) => form.setData("postal_code", e.target.value)}
-                  className="mt-1"
+                  className="mt-1.5"
                 />
                 {form.errors.postal_code && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-1.5 text-sm text-destructive">
                     {form.errors.postal_code}
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-t pt-6">
+            <div className="flex items-center justify-between border-t border-border pt-5">
               {!contact.deletedAt && (
                 <Button
                   type="button"
-                  variant="destructive"
+                  variant="ghost"
                   onClick={handleDelete}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
-                  Delete Contact
+                  <Trash2 className="h-4 w-4" />
+                  Delete
                 </Button>
               )}
               <div className="ml-auto flex gap-3">
-                <Link href={contacts_index_path()}>
-                  <Button type="button" variant="outline">
-                    Cancel
-                  </Button>
-                </Link>
+                <Button type="button" variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
                 <Button type="submit" disabled={form.processing}>
-                  {form.processing ? "Saving..." : "Save Changes"}
+                  {form.processing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
                 </Button>
               </div>
             </div>
           </form>
-        </div>
       </div>
     </>
   );

@@ -1,20 +1,10 @@
 /**
- * NbFlop Pagination Component (Page-based)
+ * NbFlop Pagination Component - Linear-inspired design
  *
- * A pagination component for page-based pagination with Flop.
- * Uses shadcn/ui Button for consistent styling.
- *
- * @example
- * ```tsx
- * <Pagination
- *   meta={meta}
- *   onPageChange={(page) => flop.setPage(page)}
- * />
- * ```
+ * A compact, clean pagination component for page-based pagination with Flop.
  */
 
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import type { PaginationProps } from "./types";
 import { cn } from "@/lib/utils";
 
@@ -33,36 +23,29 @@ function getPageNumbers(
   const pages: (number | "ellipsis-start" | "ellipsis-end")[] = [];
   const half = Math.floor(maxVisible / 2);
 
-  // Always show first page
   pages.push(1);
 
-  // Calculate range around current page
   let start = Math.max(2, currentPage - half);
   let end = Math.min(totalPages - 1, currentPage + half);
 
-  // Adjust if at start or end
   if (currentPage <= half + 1) {
     end = Math.min(totalPages - 1, maxVisible - 1);
   } else if (currentPage >= totalPages - half) {
     start = Math.max(2, totalPages - maxVisible + 2);
   }
 
-  // Add ellipsis if needed before
   if (start > 2) {
     pages.push("ellipsis-start");
   }
 
-  // Add page numbers
   for (let i = start; i <= end; i++) {
     pages.push(i);
   }
 
-  // Add ellipsis if needed after
   if (end < totalPages - 1) {
     pages.push("ellipsis-end");
   }
 
-  // Always show last page
   if (totalPages > 1) {
     pages.push(totalPages);
   }
@@ -91,28 +74,51 @@ export function Pagination({
     ? getPageNumbers(currentPage, totalPages, maxVisiblePages)
     : [];
 
+  const buttonBase = cn(
+    "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors",
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
+    "disabled:pointer-events-none disabled:opacity-40"
+  );
+
+  const pageButton = cn(
+    buttonBase,
+    "h-8 min-w-8 px-2",
+    "text-muted-foreground hover:text-foreground hover:bg-accent"
+  );
+
+  const activePageButton = cn(
+    buttonBase,
+    "h-8 min-w-8 px-2",
+    "bg-primary text-primary-foreground"
+  );
+
+  const navButton = cn(
+    buttonBase,
+    "h-8 px-2 gap-1",
+    "text-muted-foreground hover:text-foreground hover:bg-accent"
+  );
+
   return (
     <nav
-      className={cn("flex items-center justify-center gap-1", className)}
+      className={cn("flex items-center justify-center gap-0.5", className)}
       aria-label="Pagination"
       role="navigation"
     >
       {/* Previous Button */}
-      <Button
-        variant="outline"
-        size="sm"
+      <button
+        type="button"
         onClick={() => meta.previousPage && onPageChange(meta.previousPage)}
         disabled={!meta.hasPreviousPage}
         aria-label={previous}
-        className="h-8 gap-1 px-2.5"
+        className={navButton}
       >
         <ChevronLeft className="h-4 w-4" />
-        <span className="hidden sm:inline">{previous}</span>
-      </Button>
+        <span className="hidden sm:inline text-xs">{previous}</span>
+      </button>
 
       {/* Page Numbers */}
       {showPageNumbers && (
-        <div className="flex items-center gap-1" role="list">
+        <div className="flex items-center gap-0.5 mx-1" role="list">
           {pageNumbers.map((pageNum) =>
             pageNum === "ellipsis-start" || pageNum === "ellipsis-end" ? (
               <span
@@ -123,21 +129,17 @@ export function Pagination({
                 <MoreHorizontal className="h-4 w-4" />
               </span>
             ) : (
-              <Button
+              <button
+                type="button"
                 key={pageNum}
-                variant={pageNum === currentPage ? "default" : "outline"}
-                size="sm"
                 onClick={() => onPageChange(pageNum)}
                 aria-current={pageNum === currentPage ? "page" : undefined}
                 aria-label={`Page ${pageNum}`}
-                className={cn(
-                  "h-8 w-8 p-0",
-                  pageNum === currentPage &&
-                    "pointer-events-none"
-                )}
+                className={pageNum === currentPage ? activePageButton : pageButton}
+                disabled={pageNum === currentPage}
               >
                 {pageNum}
-              </Button>
+              </button>
             )
           )}
         </div>
@@ -145,23 +147,22 @@ export function Pagination({
 
       {/* Page Info (when not showing numbers) */}
       {!showPageNumbers && (
-        <span className="px-4 text-sm text-muted-foreground">
+        <span className="px-3 text-xs text-muted-foreground tabular-nums">
           {page(currentPage, totalPages)}
         </span>
       )}
 
       {/* Next Button */}
-      <Button
-        variant="outline"
-        size="sm"
+      <button
+        type="button"
         onClick={() => meta.nextPage && onPageChange(meta.nextPage)}
         disabled={!meta.hasNextPage}
         aria-label={next}
-        className="h-8 gap-1 px-2.5"
+        className={navButton}
       >
-        <span className="hidden sm:inline">{next}</span>
+        <span className="hidden sm:inline text-xs">{next}</span>
         <ChevronRight className="h-4 w-4" />
-      </Button>
+      </button>
     </nav>
   );
 }

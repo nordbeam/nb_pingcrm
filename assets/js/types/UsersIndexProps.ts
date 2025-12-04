@@ -7,6 +7,7 @@ import type { AuthProps } from "./AuthProps";
  * Generated from NbSerializer Inertia page declaration
  */
 export interface UsersIndexProps extends AuthProps {
+  filterMode: string | null;
   filters: Record<string, any>;
   meta: FlopMeta;
   users: User;

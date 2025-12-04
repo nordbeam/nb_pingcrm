@@ -1,13 +1,8 @@
 import { useState, useMemo } from "react";
 import { Head, usePage } from "@/lib/inertia";
-import { router, Link } from "@/lib/inertia";
+import { router } from "@/lib/inertia";
 import type { UsersIndexProps, User } from "@/types";
-import {
-  users_index_path,
-  users_new_path,
-  users_delete_path,
-  users_restore_path,
-} from "@/routes";
+import { users as usersRoutes } from "@/routes";
 import {
   useFlopParams,
   flopToQueryParams,
@@ -17,8 +12,8 @@ import {
   type FilterMode,
   type FlopOperator,
 } from "@/components/flop";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/PageHeader";
+import { SearchInput } from "@/components/SearchInput";
 import { usersFilterConfig } from "./filterConfig";
 import { createColumns } from "./columns";
 
@@ -42,7 +37,7 @@ export default function UsersIndex() {
         filter_mode: filterMode !== "all" ? filterMode : undefined,
       };
 
-      router.visit(users_index_path({ query }), {
+      router.visit(usersRoutes.index({ query }), {
         preserveState: true,
         preserveScroll: true,
       });
@@ -52,7 +47,7 @@ export default function UsersIndex() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     router.visit(
-      users_index_path({
+      usersRoutes.index({
         query: {
           search: search || undefined,
           role: filters?.role || undefined,
@@ -64,6 +59,24 @@ export default function UsersIndex() {
     );
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearch(value);
+
+    if (!value && filters?.search) {
+      router.visit(
+        usersRoutes.index({
+          query: {
+            role: filters?.role || undefined,
+            trashed: filters?.trashed || undefined,
+            filter_mode: filterMode !== "all" ? filterMode : undefined,
+          },
+        }),
+        { preserveState: true }
+      );
+    }
+  };
+
   const handleCustomFilterChange = (param: string, value: unknown) => {
     const query: Record<string, unknown> = {
       search: filters?.search,
@@ -73,13 +86,13 @@ export default function UsersIndex() {
     };
     query[param] = value;
 
-    router.visit(users_index_path({ query }), { preserveState: true });
+    router.visit(usersRoutes.index({ query }), { preserveState: true });
   };
 
   const handleFilterModeChange = (mode: FilterMode) => {
     setFilterMode(mode);
     router.visit(
-      users_index_path({
+      usersRoutes.index({
         query: {
           ...flopToQueryParams(flop.params),
           search: filters?.search,
@@ -94,19 +107,19 @@ export default function UsersIndex() {
 
   const handleClearFilters = () => {
     flop.clearFilters();
-    router.visit(users_index_path({ query: { search: filters?.search } }), {
+    router.visit(usersRoutes.index({ query: { search: filters?.search } }), {
       preserveState: true,
     });
   };
 
   const handleDelete = (user: User) => {
     if (confirm(`Are you sure you want to delete ${user.name}?`)) {
-      router.visit(users_delete_path.delete(user.id));
+      router.visit(usersRoutes.delete(user.id));
     }
   };
 
   const handleRestore = (user: User) => {
-    router.visit(users_restore_path.put(user.id));
+    router.visit(usersRoutes.restore(user.id));
   };
 
   const columns = useMemo(
@@ -122,75 +135,71 @@ export default function UsersIndex() {
     <>
       <Head title="Users" />
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Users</h1>
-          <Link href={users_new_path()}>
-            <Button>Create User</Button>
-          </Link>
-        </div>
+      <div className="px-6 py-6">
+        <div className="mx-auto max-w-5xl">
+          <PageHeader
+            title="Users"
+            description="Manage team members and their permissions."
+            action={{
+              label: "New user",
+              href: usersRoutes.new(),
+            }}
+          />
 
-        {/* Filters */}
-        <div className="mb-6 space-y-3 rounded-lg bg-white p-4 shadow">
-          {/* Search */}
-          <form onSubmit={handleSearch}>
-            <Input
-              type="search"
-              placeholder="Search..."
+          {/* Search and Filters */}
+          <div className="mb-4 space-y-3">
+            <SearchInput
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="max-w-xs"
+              onChange={handleSearchChange}
+              onSubmit={handleSearch}
+              placeholder="Search users..."
             />
-          </form>
 
-          {/* Filter Bar */}
-          <FilterBar
-            configs={usersFilterConfig}
-            filters={flop.params.filters ?? []}
-            customFilters={filters}
-            filterMode={filterMode}
-            onFilterChange={(field, op, value) =>
-              flop.setFilter(field, op as FlopOperator, value)
-            }
-            onFilterRemove={(field, op) =>
-              flop.removeFilter(field, op as FlopOperator | undefined)
-            }
-            onCustomFilterChange={handleCustomFilterChange}
-            onClearFilters={handleClearFilters}
-            onFilterModeChange={handleFilterModeChange}
-          />
-        </div>
+            <FilterBar
+              configs={usersFilterConfig}
+              filters={flop.params.filters ?? []}
+              customFilters={filters}
+              filterMode={filterMode}
+              onFilterChange={(field, op, value) =>
+                flop.setFilter(field, op as FlopOperator, value)
+              }
+              onFilterRemove={(field, op) =>
+                flop.removeFilter(field, op as FlopOperator | undefined)
+              }
+              onCustomFilterChange={handleCustomFilterChange}
+              onClearFilters={handleClearFilters}
+              onFilterModeChange={handleFilterModeChange}
+            />
+          </div>
 
-        {/* Table */}
-        <div className="rounded-lg bg-white shadow">
-          <DataTable
-            columns={columns}
-            data={users}
-            meta={meta}
-            onSortChange={flop.setSort}
-            getSortDirection={flop.getSortDirection}
-            emptyState="No users found."
-            rowClassName={(row) =>
-              row.original.deletedAt ? "bg-gray-50 opacity-60" : ""
-            }
-          />
+          {/* Table */}
+          <div className="rounded-lg border border-border bg-card">
+            <DataTable
+              columns={columns}
+              data={users}
+              meta={meta}
+              onSortChange={flop.setSort}
+              getSortDirection={flop.getSortDirection}
+              emptyState="No users found."
+              rowClassName={(row) =>
+                row.original.deletedAt ? "bg-muted/50 opacity-60" : ""
+              }
+            />
 
-          {/* Pagination */}
-          {meta.totalPages && meta.totalPages > 1 && (
-            <div className="border-t p-4">
-              <Pagination
-                meta={meta}
-                onPageChange={flop.setPage}
-                className="flex items-center justify-center gap-2"
-              />
-            </div>
-          )}
-        </div>
+            {meta.totalPages && meta.totalPages > 1 && (
+              <div className="border-t border-border px-4 py-3">
+                <Pagination
+                  meta={meta}
+                  onPageChange={flop.setPage}
+                  className="flex items-center justify-center gap-1"
+                />
+              </div>
+            )}
+          </div>
 
-        {/* Stats */}
-        <div className="mt-4 text-sm text-gray-500">
-          {meta.totalCount} user{meta.totalCount !== 1 ? "s" : ""} total
+          <div className="mt-3 text-xs text-muted-foreground">
+            {meta.totalCount} user{meta.totalCount !== 1 ? "s" : ""} total
+          </div>
         </div>
       </div>
     </>
