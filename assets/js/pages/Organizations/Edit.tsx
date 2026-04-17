@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DeletedNotice } from "@/components/DeletedNotice";
+import { ViewerIndicator } from "@/components/ViewerIndicator";
 import { Loader2, Trash2 } from "lucide-react";
 
 const COUNTRIES = [
@@ -84,7 +85,10 @@ export default function OrganizationsEdit({ onClose }: OrganizationsEditPageProp
       <Head title={`Edit ${organization.name}`} />
 
       <div className="p-6">
-        <h2 className="text-lg font-semibold mb-6">Edit {organization.name}</h2>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <h2 className="text-lg font-semibold">Edit {organization.name}</h2>
+          <ViewerIndicator type="organization" id={organization.id} />
+        </div>
 
         {organization.deletedAt && (
           <DeletedNotice entityName="organization" onRestore={handleRestore} />

@@ -1,131 +1,39 @@
-import { useState, useMemo } from "react";
-import { Head, usePage } from "@/lib/inertia";
-import { router } from "@/lib/inertia";
-import type { OrganizationsIndexProps, Organization } from "@/types";
+import { Head, usePage, ClientModalLink, router } from "@/lib/inertia";
+import type { OrganizationsIndexProps } from "@/types";
+import type { TableResource } from "@/components/flop";
+import { Table } from "@/components/flop";
 import { organizations as orgsRoutes } from "@/routes";
-import {
-  useFlopParams,
-  flopToQueryParams,
-  Pagination,
-  FilterBar,
-  DataTable,
-  type FilterMode,
-  type FlopOperator,
-} from "@/components/flop";
-import { PageHeader } from "@/components/PageHeader";
-import { SearchInput } from "@/components/SearchInput";
-import { organizationsFilterConfig } from "./filterConfig";
-import { createColumns } from "./columns";
+import { OrganizationFormSkeleton } from "@/components/OrganizationFormSkeleton";
+import { useTableRealtime } from "@/hooks/useTableRealtime";
+import { CircleDot } from "lucide-react";
+
+interface Organization {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  postalCode: string | null;
+  contactsCount: number;
+  deletedAt: string | null;
+}
 
 export default function OrganizationsIndex() {
   const { props } = usePage<OrganizationsIndexProps>();
-  const organizations = props.organizations as unknown as Organization[];
-  const { meta, filters } = props;
+  const organizations = props.organizations as TableResource<Organization>;
 
-  const [search, setSearch] = useState(filters?.search || "");
-  const [filterMode, setFilterMode] = useState<FilterMode>(
-    ((props as Record<string, unknown>).filter_mode as FilterMode) || "all"
-  );
-
-  const flop = useFlopParams(meta, {
-    onParamsChange: (params) => {
-      const query = {
-        ...flopToQueryParams(params),
-        search: search || undefined,
-        trashed: filters?.trashed || undefined,
-        filter_mode: filterMode !== "all" ? filterMode : undefined,
-      };
-
-      router.visit(orgsRoutes.index({ query }), {
-        preserveState: true,
-        preserveScroll: true,
-      });
-    },
+  // Real-time updates
+  const { data, isHighlighted } = useTableRealtime<Organization>({
+    initialData: organizations.data,
+    topic: "crm:organizations",
+    createEvent: "organization_created",
+    updateEvent: "organization_updated",
+    deleteEvent: "organization_deleted",
+    recordKey: "organization",
   });
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    router.visit(
-      orgsRoutes.index({
-        query: {
-          search: search || undefined,
-          trashed: filters?.trashed || undefined,
-          filter_mode: filterMode !== "all" ? filterMode : undefined,
-        },
-      }),
-      { preserveState: true }
-    );
-  };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearch(value);
-
-    if (!value && filters?.search) {
-      router.visit(
-        orgsRoutes.index({
-          query: {
-            trashed: filters?.trashed || undefined,
-            filter_mode: filterMode !== "all" ? filterMode : undefined,
-          },
-        }),
-        { preserveState: true }
-      );
-    }
-  };
-
-  const handleCustomFilterChange = (param: string, value: unknown) => {
-    const query: Record<string, unknown> = {
-      search: filters?.search,
-      trashed: filters?.trashed,
-      filter_mode: filterMode !== "all" ? filterMode : undefined,
-    };
-    query[param] = value;
-
-    router.visit(orgsRoutes.index({ query }), { preserveState: true });
-  };
-
-  const handleFilterModeChange = (mode: FilterMode) => {
-    setFilterMode(mode);
-    router.visit(
-      orgsRoutes.index({
-        query: {
-          ...flopToQueryParams(flop.params),
-          search: filters?.search,
-          trashed: filters?.trashed,
-          filter_mode: mode !== "all" ? mode : undefined,
-        },
-      }),
-      { preserveState: true }
-    );
-  };
-
-  const handleClearFilters = () => {
-    flop.clearFilters();
-    router.visit(
-      orgsRoutes.index({ query: { search: filters?.search } }),
-      { preserveState: true }
-    );
-  };
-
-  const handleDelete = (organization: Organization) => {
-    if (confirm(`Are you sure you want to delete ${organization.name}?`)) {
-      router.visit(orgsRoutes.delete(organization.id));
-    }
-  };
-
-  const handleRestore = (organization: Organization) => {
-    router.visit(orgsRoutes.restore(organization.id));
-  };
-
-  const columns = useMemo(
-    () =>
-      createColumns({
-        onDelete: handleDelete,
-        onRestore: handleRestore,
-      }),
-    []
-  );
 
   return (
     <>
@@ -133,68 +41,74 @@ export default function OrganizationsIndex() {
 
       <div className="px-6 py-6">
         <div className="mx-auto max-w-5xl">
-          <PageHeader
-            title="Organizations"
-            description="Manage your organizations and their contacts."
-            action={{
-              label: "New organization",
-              href: orgsRoutes.new(),
-            }}
-          />
-
-          {/* Search and Filters */}
-          <div className="mb-4 space-y-3">
-            <SearchInput
-              value={search}
-              onChange={handleSearchChange}
-              onSubmit={handleSearch}
-              placeholder="Search organizations..."
-            />
-
-            <FilterBar
-              configs={organizationsFilterConfig}
-              filters={flop.params.filters ?? []}
-              customFilters={filters}
-              filterMode={filterMode}
-              onFilterChange={(field, op, value) =>
-                flop.setFilter(field, op as FlopOperator, value)
-              }
-              onFilterRemove={(field, op) =>
-                flop.removeFilter(field, op as FlopOperator | undefined)
-              }
-              onCustomFilterChange={handleCustomFilterChange}
-              onClearFilters={handleClearFilters}
-              onFilterModeChange={handleFilterModeChange}
-            />
+          {/* Page Header */}
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">Organizations</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Manage your organizations and their contacts.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <CircleDot className="h-2 w-2 animate-pulse text-green-500" />
+                Live
+              </span>
+              <ClientModalLink
+                href={orgsRoutes.new()}
+                loadingComponent={OrganizationFormSkeleton}
+                modalConfig={{ slideover: true, position: "right" }}
+                prefetch
+              >
+                <button className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                  New organization
+                </button>
+              </ClientModalLink>
+            </div>
           </div>
 
           {/* Table */}
-          <div className="rounded-lg border border-border bg-card">
-            <DataTable
-              columns={columns}
-              data={organizations}
-              meta={meta}
-              onSortChange={flop.setSort}
-              getSortDirection={flop.getSortDirection}
-              emptyState="No organizations found."
-              rowClassName={(row) =>
-                row.original.deletedAt ? "bg-muted/50 opacity-60" : ""
+          <Table
+            resource={{ ...organizations, data }}
+            baseUrl="/organizations"
+            rowClassName={(row) => {
+              const classes: string[] = [];
+              if (row.deletedAt) classes.push("bg-muted/50 opacity-60");
+              if (isHighlighted(row.id)) {
+                classes.push(
+                  "animate-pulse bg-primary/10 ring-1 ring-primary/20"
+                );
               }
-            />
+              return classes.join(" ");
+            }}
+            onRowClick={(row) => {
+              router.visit(orgsRoutes.edit(row.id));
+            }}
+            renderCell={(column, value, row) => {
+              // Custom rendering for name with delete indicator
+              if (column.key === "name") {
+                return (
+                  <div>
+                    <div className="font-medium">{row.name}</div>
+                    {row.deletedAt && (
+                      <span className="text-xs text-muted-foreground">(deleted)</span>
+                    )}
+                  </div>
+                );
+              }
 
-            {meta.totalPages && meta.totalPages > 1 && (
-              <div className="border-t border-border px-4 py-3">
-                <Pagination
-                  meta={meta}
-                  onPageChange={flop.setPage}
-                  className="flex items-center justify-center gap-1"
-                />
-              </div>
-            )}
-          </div>
+              // Custom rendering for location
+              if (column.key === "city") {
+                const parts = [row.city, row.region].filter(Boolean);
+                return parts.length > 0 ? parts.join(", ") : null;
+              }
+
+              return undefined; // Use default rendering
+            }}
+          />
 
           <div className="mt-3 text-xs text-muted-foreground">
-            {meta.totalCount} organization{meta.totalCount !== 1 ? "s" : ""} total
+            {data.length} organization{data.length !== 1 ? "s" : ""} total
           </div>
         </div>
       </div>

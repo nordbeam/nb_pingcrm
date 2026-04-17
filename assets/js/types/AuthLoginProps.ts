@@ -6,5 +6,4 @@ import type { AuthProps } from "./AuthProps";
  */
 export interface AuthLoginProps extends AuthProps {
 
-  [key: string]: unknown;
 }

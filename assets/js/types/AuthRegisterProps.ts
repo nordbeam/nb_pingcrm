@@ -6,5 +6,4 @@ import type { AuthProps } from "./AuthProps";
  */
 export interface AuthRegisterProps extends AuthProps {
 
-  [key: string]: unknown;
 }

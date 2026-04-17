@@ -10,6 +10,7 @@ defmodule NbPingcrm.Accounts.User do
     Flop.Schema,
     filterable: [:first_name, :last_name, :email, :owner],
     sortable: [:first_name, :last_name, :email, :owner, :inserted_at],
+    compound_fields: [search: [:first_name, :last_name, :email]],
     default_pagination_type: :page,
     default_limit: 10,
     default_order: %{order_by: [:last_name, :first_name], order_directions: [:asc, :asc]}
@@ -36,8 +37,16 @@ defmodule NbPingcrm.Accounts.User do
   Returns full name from first and last name.
   """
   def name(%__MODULE__{first_name: first, last_name: last}) do
-    "#{first} #{last}"
+    format_name(first, last)
   end
+
+  def name(%{first_name: first, last_name: last}) do
+    format_name(first, last)
+  end
+
+  def name(%{email: email}) when is_binary(email), do: email
+
+  def name(_), do: ""
 
   @doc """
   Checks if this is the demo user.
@@ -107,9 +116,20 @@ defmodule NbPingcrm.Accounts.User do
   defp validate_password(changeset, opts) do
     changeset
     |> validate_required([:password])
-    |> validate_length(:password, min: 6, max: 72)
+    |> validate_length(:password, min: 12, max: 72)
     |> maybe_hash_password(opts)
   end
+
+  defp format_name(first, last) do
+    [first, last]
+    |> Enum.map(&normalize_name_part/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join(" ")
+  end
+
+  defp normalize_name_part(nil), do: ""
+  defp normalize_name_part(part) when is_binary(part), do: String.trim(part)
+  defp normalize_name_part(part), do: part |> to_string() |> String.trim()
 
   defp maybe_hash_password(changeset, opts) do
     hash_password? = Keyword.get(opts, :hash_password, true)

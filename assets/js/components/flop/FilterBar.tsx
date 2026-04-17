@@ -1,99 +1,106 @@
 /**
  * FilterBar - Main container for Linear-style filter chips
+ *
+ * Works with TableFilter from nb_flop DSL and TableFlopFilter for active filters
  */
 
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { FilterBarProps, FilterConfig, FlopOperator } from './types';
+import type { TableFilter, TableFlopFilter, FilterClause } from './tableTypes';
 import { FilterChip } from './FilterChip';
 import { AddFilterButton } from './AddFilterButton';
-import { FilterModeToggle } from './FilterModeToggle';
+import {
+  clauseToFlopOp,
+  flopOpToClause,
+  transformFilterValue,
+} from './filterUtils';
+
+export interface FilterBarProps {
+  /** Filter definitions from DSL (resource.filters) */
+  filters: TableFilter[];
+  /** Active filter values (resource.state.filters) */
+  activeFilters: TableFlopFilter[];
+  /** Callback when a filter is added or changed */
+  onFilterChange: (field: string, op: string, value: unknown) => void;
+  /** Callback when a filter is removed */
+  onFilterRemove: (field: string, op?: string) => void;
+  /** Callback to clear all filters */
+  onClearFilters: () => void;
+  /** Additional CSS class */
+  className?: string;
+}
+
+/**
+ * Represents a filter chip with its definition and current value
+ */
+interface ActiveFilterWithDefinition {
+  definition: TableFilter;
+  clause: FilterClause;
+  value: unknown;
+  flopOp: string;
+}
 
 export function FilterBar({
-  configs,
   filters,
-  customFilters = {},
-  filterOptions = {},
-  filterMode,
+  activeFilters,
   onFilterChange,
   onFilterRemove,
-  onCustomFilterChange,
   onClearFilters,
-  onFilterModeChange,
   className = '',
 }: FilterBarProps) {
-  // Build active filters from both Flop filters and custom filters
-  const activeFilters: Array<{
-    config: FilterConfig;
-    operator: FlopOperator | string;
-    value: unknown;
-    isCustom: boolean;
-  }> = [];
+  // Match active filters with their definitions
+  const activeFiltersWithDefs: ActiveFilterWithDefinition[] = [];
 
-  // Add custom filters (role, trashed, etc.)
-  configs.forEach((config) => {
-    if (config.customParam && customFilters[config.customParam] !== undefined) {
-      const value = customFilters[config.customParam];
-      // Skip "default" values
-      if (value !== '' && value !== null && value !== 'all' && value !== 'not_trashed') {
-        activeFilters.push({
-          config,
-          operator: '==',
-          value,
-          isCustom: true,
-        });
-      }
-    }
-  });
-
-  // Add Flop filters
-  filters.forEach((filter) => {
-    const config = configs.find(
-      (c) => c.field === filter.field || c.customParam === filter.field
-    );
-    if (config && !config.customParam) {
-      activeFilters.push({
-        config,
-        operator: filter.op,
-        value: filter.value,
-        isCustom: false,
+  activeFilters.forEach((af) => {
+    const definition = filters.find((f) => f.field === af.field);
+    if (definition) {
+      activeFiltersWithDefs.push({
+        definition,
+        clause: flopOpToClause(af.op),
+        value: af.value,
+        flopOp: af.op,
       });
     }
   });
 
-  const hasActiveFilters = activeFilters.length > 0;
+  const hasActiveFilters = activeFiltersWithDefs.length > 0;
 
-  const handleFilterChange = (
-    config: FilterConfig,
-    isCustom: boolean,
-    op: FlopOperator | string,
-    value: unknown
-  ) => {
-    if (isCustom && config.customParam && onCustomFilterChange) {
-      onCustomFilterChange(config.customParam, value);
-    } else {
-      onFilterChange(config.field, op, value);
+  // Get filters that can still be added (not already active, or allow multiple)
+  const availableFilters = filters.filter((f) => {
+    // For set filters, only allow one active at a time
+    if (f.type === 'set') {
+      return !activeFiltersWithDefs.some((af) => af.definition.field === f.field);
     }
-  };
-
-  const handleFilterRemove = (config: FilterConfig, isCustom: boolean, op: FlopOperator | string) => {
-    if (isCustom && config.customParam && onCustomFilterChange) {
-      // Reset to default value
-      onCustomFilterChange(config.customParam, undefined);
-    } else {
-      onFilterRemove(config.field, op);
-    }
-  };
-
-  // Filter out configs that already have active filters for the add button
-  const availableConfigs = configs.filter((config) => {
-    // For single-value fields (customParam), check if already active
-    if (config.customParam) {
-      return !activeFilters.some((af) => af.config.field === config.field);
-    }
-    // For Flop filters, allow multiple (different operators)
+    // For other types, allow multiple (e.g., different clauses)
     return true;
   });
+
+  const handleClauseChange = (filter: ActiveFilterWithDefinition, newClause: FilterClause) => {
+    // Convert clause to Flop operator
+    const newOp = clauseToFlopOp(newClause);
+    // Transform value if needed (e.g., for contains → add wildcards)
+    const newValue = transformFilterValue(newClause, filter.value);
+
+    // Remove old filter and add new one
+    onFilterRemove(filter.definition.field, filter.flopOp);
+    onFilterChange(filter.definition.field, newOp, newValue);
+  };
+
+  const handleValueChange = (filter: ActiveFilterWithDefinition, newValue: unknown) => {
+    // Transform value based on clause type
+    const transformedValue = transformFilterValue(filter.clause, newValue);
+    onFilterChange(filter.definition.field, filter.flopOp, transformedValue);
+  };
+
+  const handleRemove = (filter: ActiveFilterWithDefinition) => {
+    onFilterRemove(filter.definition.field, filter.flopOp);
+  };
+
+  const handleAddFilter = (field: string, clause: FilterClause, value: unknown) => {
+    const op = clauseToFlopOp(clause);
+    const transformedValue = transformFilterValue(clause, value);
+    onFilterChange(field, op, transformedValue);
+  };
 
   return (
     <div
@@ -102,50 +109,24 @@ export function FilterBar({
       aria-label="Active filters"
     >
       {/* Active filter chips */}
-      {activeFilters.map((af, index) => {
-        const options =
-          (af.config.optionsKey && filterOptions[af.config.optionsKey]) ||
-          af.config.options;
-
-        return (
-          <FilterChip
-            key={`${af.config.field}-${af.operator}-${index}`}
-            config={af.config}
-            operator={af.operator}
-            value={af.value}
-            filterOptions={options}
-            onOperatorChange={(op) =>
-              handleFilterChange(af.config, af.isCustom, op, af.value)
-            }
-            onValueChange={(value) =>
-              handleFilterChange(af.config, af.isCustom, af.operator, value)
-            }
-            onRemove={() => handleFilterRemove(af.config, af.isCustom, af.operator)}
-          />
-        );
-      })}
+      {activeFiltersWithDefs.map((af, index) => (
+        <FilterChip
+          key={`${af.definition.field}-${af.flopOp}-${index}`}
+          filter={af.definition}
+          clause={af.clause}
+          value={af.value}
+          onClauseChange={(clause) => handleClauseChange(af, clause)}
+          onValueChange={(value) => handleValueChange(af, value)}
+          onRemove={() => handleRemove(af)}
+        />
+      ))}
 
       {/* Add filter button */}
-      {availableConfigs.length > 0 && (
+      {availableFilters.length > 0 && (
         <AddFilterButton
-          configs={availableConfigs}
-          filterOptions={filterOptions}
-          onAddFilter={(field, op, value) => {
-            const config = configs.find(
-              (c) => c.field === field || c.customParam === field
-            );
-            if (config?.customParam && onCustomFilterChange) {
-              onCustomFilterChange(config.customParam, value);
-            } else {
-              onFilterChange(field, op, value);
-            }
-          }}
+          filters={availableFilters}
+          onAddFilter={handleAddFilter}
         />
-      )}
-
-      {/* Filter mode toggle (only show when multiple filters) */}
-      {activeFilters.length > 1 && (
-        <FilterModeToggle mode={filterMode} onChange={onFilterModeChange} />
       )}
 
       {/* Clear all button */}

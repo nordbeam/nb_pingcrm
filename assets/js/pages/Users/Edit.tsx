@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DeletedNotice } from "@/components/DeletedNotice";
+import { ViewerIndicator } from "@/components/ViewerIndicator";
 import { Loader2, Trash2 } from "lucide-react";
 
 interface UsersEditPageProps {
@@ -64,7 +65,10 @@ export default function UsersEdit({ onClose }: UsersEditPageProps) {
       <Head title={`Edit ${user.name}`} />
 
       <div className="p-6">
-        <h2 className="text-lg font-semibold mb-6">Edit {user.name}</h2>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <h2 className="text-lg font-semibold">Edit {user.name}</h2>
+          <ViewerIndicator type="user" id={user.id} />
+        </div>
 
         {user.deletedAt && (
           <DeletedNotice entityName="user" onRestore={handleRestore} />

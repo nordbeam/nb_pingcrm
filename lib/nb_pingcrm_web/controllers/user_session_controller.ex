@@ -10,10 +10,13 @@ defmodule NbPingcrmWeb.UserSessionController do
 
   # Define page props for type generation
   inertia_page :auth_login, component: "Auth/Login" do
+    prop(:email, :string, nullable: true)
+    prop(:sudo_mode, :boolean, default: false)
+    prop(:mode, enum: ["password", "magic"], default: "password")
   end
 
-  def new(conn, _params) do
-    render_inertia(conn, :auth_login)
+  def new(conn, params) do
+    render_inertia(conn, :auth_login, login_page_props(conn, params))
   end
 
   # magic link login
@@ -33,7 +36,7 @@ defmodule NbPingcrmWeb.UserSessionController do
       {:error, :not_found} ->
         conn
         |> put_flash(:error, "The link is invalid or it has expired.")
-        |> render_inertia(:auth_login)
+        |> render_inertia(:auth_login, login_page_props(conn, %{"mode" => "magic"}))
     end
   end
 
@@ -47,7 +50,7 @@ defmodule NbPingcrmWeb.UserSessionController do
       # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
       conn
       |> put_flash(:error, "Invalid email or password")
-      |> render_inertia(:auth_login)
+      |> render_inertia(:auth_login, login_page_props(conn, %{"email" => email, "mode" => "password"}))
     end
   end
 
@@ -88,4 +91,22 @@ defmodule NbPingcrmWeb.UserSessionController do
     |> put_flash(:info, "Logged out successfully.")
     |> UserAuth.log_out_user()
   end
+
+  defp login_page_props(conn, params) do
+    user = conn.assigns[:current_scope] && conn.assigns.current_scope.user
+    email = Map.get(params, "email") || user_email(user)
+    mode = login_mode(params)
+
+    %{
+      email: email,
+      sudo_mode: not is_nil(user),
+      mode: mode
+    }
+  end
+
+  defp login_mode(%{"mode" => "magic"}), do: "magic"
+  defp login_mode(_), do: "password"
+
+  defp user_email(%{email: email}) when is_binary(email), do: email
+  defp user_email(_), do: nil
 end

@@ -1,18 +1,38 @@
 /**
- * FilterValueInput - Text/number/date input for filter values
+ * FilterValueInput - Type-aware input for filter values
+ *
+ * Supports text, number, date, and datetime inputs with min/max constraints
  */
 
 import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
-import type { FilterValueInputProps } from './types';
+
+export interface FilterValueInputProps {
+  /** Current value */
+  value?: string;
+  /** Callback when value changes */
+  onChange: (value: string) => void;
+  /** Placeholder text */
+  placeholder?: string;
+  /** Input type */
+  type?: 'text' | 'number' | 'date' | 'datetime-local';
+  /** Minimum value (for number/date) */
+  min?: number | string;
+  /** Maximum value (for number/date) */
+  max?: number | string;
+  /** Debounce delay in ms */
+  debounceMs?: number;
+}
 
 export function FilterValueInput({
   value = '',
   onChange,
   placeholder = 'Enter value...',
   type = 'text',
-  debounceMs = 500,
-}: FilterValueInputProps & { debounceMs?: number }) {
+  min,
+  max,
+  debounceMs = 300,
+}: FilterValueInputProps) {
   const [localValue, setLocalValue] = useState(value);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -65,17 +85,28 @@ export function FilterValueInput({
     }
   };
 
-  return (
-    <Input
-      type={type}
-      value={localValue}
-      onChange={handleChange}
-      onKeyDown={handleKeyDown}
-      onBlur={handleBlur}
-      placeholder={placeholder}
-      className="h-8"
-    />
-  );
+  // Build input props with constraints
+  const inputProps: React.InputHTMLAttributes<HTMLInputElement> = {
+    type,
+    value: localValue,
+    onChange: handleChange,
+    onKeyDown: handleKeyDown,
+    onBlur: handleBlur,
+    placeholder,
+    className: 'h-8',
+  };
+
+  // Add min/max for numeric and date types
+  if (type === 'number') {
+    if (min !== undefined) inputProps.min = min;
+    if (max !== undefined) inputProps.max = max;
+    inputProps.step = 'any'; // Allow decimals
+  } else if (type === 'date' || type === 'datetime-local') {
+    if (min !== undefined) inputProps.min = String(min);
+    if (max !== undefined) inputProps.max = String(max);
+  }
+
+  return <Input {...inputProps} />;
 }
 
 export default FilterValueInput;

@@ -7,5 +7,4 @@ import type { AuthProps } from "./AuthProps";
  */
 export interface ContactsCreateProps extends AuthProps {
   organizations: Organization;
-  [key: string]: unknown;
 }

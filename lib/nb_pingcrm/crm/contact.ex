@@ -10,6 +10,7 @@ defmodule NbPingcrm.CRM.Contact do
     Flop.Schema,
     filterable: [:first_name, :last_name, :email, :city, :country, :organization_id, :phone],
     sortable: [:first_name, :last_name, :email, :city, :country, :inserted_at],
+    compound_fields: [search: [:first_name, :last_name, :email, :phone, :city]],
     default_pagination_type: :page,
     default_limit: 10,
     default_order: %{order_by: [:last_name, :first_name], order_directions: [:asc, :asc]}
@@ -37,8 +38,16 @@ defmodule NbPingcrm.CRM.Contact do
   Returns full name from first and last name.
   """
   def name(%__MODULE__{first_name: first, last_name: last}) do
-    "#{first} #{last}"
+    format_name(first, last)
   end
+
+  def name(%{first_name: first, last_name: last}) do
+    format_name(first, last)
+  end
+
+  def name(%{email: email}) when is_binary(email), do: email
+
+  def name(_), do: ""
 
   @doc """
   Changeset for creating/updating a contact.
@@ -103,4 +112,15 @@ defmodule NbPingcrm.CRM.Contact do
           ilike(c.email, ^search_term)
     )
   end
+
+  defp format_name(first, last) do
+    [first, last]
+    |> Enum.map(&normalize_name_part/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join(" ")
+  end
+
+  defp normalize_name_part(nil), do: ""
+  defp normalize_name_part(part) when is_binary(part), do: String.trim(part)
+  defp normalize_name_part(part), do: part |> to_string() |> String.trim()
 end

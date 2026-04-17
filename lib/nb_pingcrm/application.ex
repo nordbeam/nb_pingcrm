@@ -12,6 +12,8 @@ defmodule NbPingcrm.Application do
       NbPingcrm.Repo,
       {DNSCluster, query: Application.get_env(:nb_pingcrm, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: NbPingcrm.PubSub},
+      # Presence tracking for real-time features
+      NbPingcrmWeb.Presence,
       # Start a worker by calling: NbPingcrm.Worker.start_link(arg)
       # {NbPingcrm.Worker, arg},
       # SSR support for Inertia.js

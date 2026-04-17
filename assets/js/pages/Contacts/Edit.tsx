@@ -13,6 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DeletedNotice } from "@/components/DeletedNotice";
+import { ViewerIndicator } from "@/components/ViewerIndicator";
+import { EditingBanner, EditingIndicator } from "@/components/EditingIndicator";
+import { useEditingIndicator } from "@/hooks/useEditingIndicator";
 import { Loader2, Trash2 } from "lucide-react";
 
 const COUNTRIES = [
@@ -33,7 +36,12 @@ export default function ContactsEdit({ onClose }: ContactsEditPageProps) {
   const { props } = usePage<ContactsEditProps>();
 
   const { contact } = props;
+  console.log("contact props:", contact);
   const organizations = props.organizations as unknown as Organization[];
+
+  // Collaborative editing indicators
+  const { startEditing, stopEditing, editingUsers, isFieldBeingEdited } =
+    useEditingIndicator({ type: "contact", id: contact.id });
 
   const form = useForm(
     {
@@ -91,20 +99,33 @@ export default function ContactsEdit({ onClose }: ContactsEditPageProps) {
       <Head title={`Edit ${contact.name}`} />
 
       <div className="p-6">
-        <h2 className="text-lg font-semibold mb-6">Edit {contact.name}</h2>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <h2 className="text-lg font-semibold">Edit {contact.name}</h2>
+          <ViewerIndicator type="contact" id={contact.id} />
+        </div>
 
         {contact.deletedAt && (
           <DeletedNotice entityName="contact" onRestore={handleRestore} />
         )}
 
+        {/* Editing indicator banner */}
+        <EditingBanner editingUsers={editingUsers} />
+
         <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <Label htmlFor="first_name">First Name</Label>
+                <div className="flex items-center">
+                  <Label htmlFor="first_name">First Name</Label>
+                  {isFieldBeingEdited("first_name") && (
+                    <EditingIndicator editingUser={isFieldBeingEdited("first_name")!} />
+                  )}
+                </div>
                 <Input
                   id="first_name"
                   value={form.data.first_name}
                   onChange={(e) => form.setData("first_name", e.target.value)}
+                  onFocus={() => startEditing("first_name")}
+                  onBlur={stopEditing}
                   className="mt-1.5"
                 />
                 {form.errors.first_name && (
@@ -115,11 +136,18 @@ export default function ContactsEdit({ onClose }: ContactsEditPageProps) {
               </div>
 
               <div>
-                <Label htmlFor="last_name">Last Name</Label>
+                <div className="flex items-center">
+                  <Label htmlFor="last_name">Last Name</Label>
+                  {isFieldBeingEdited("last_name") && (
+                    <EditingIndicator editingUser={isFieldBeingEdited("last_name")!} />
+                  )}
+                </div>
                 <Input
                   id="last_name"
                   value={form.data.last_name}
                   onChange={(e) => form.setData("last_name", e.target.value)}
+                  onFocus={() => startEditing("last_name")}
+                  onBlur={stopEditing}
                   className="mt-1.5"
                 />
                 {form.errors.last_name && (
@@ -159,12 +187,19 @@ export default function ContactsEdit({ onClose }: ContactsEditPageProps) {
 
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <Label htmlFor="email">Email</Label>
+                <div className="flex items-center">
+                  <Label htmlFor="email">Email</Label>
+                  {isFieldBeingEdited("email") && (
+                    <EditingIndicator editingUser={isFieldBeingEdited("email")!} />
+                  )}
+                </div>
                 <Input
                   id="email"
                   type="email"
                   value={form.data.email}
                   onChange={(e) => form.setData("email", e.target.value)}
+                  onFocus={() => startEditing("email")}
+                  onBlur={stopEditing}
                   className="mt-1.5"
                 />
                 {form.errors.email && (
@@ -175,12 +210,19 @@ export default function ContactsEdit({ onClose }: ContactsEditPageProps) {
               </div>
 
               <div>
-                <Label htmlFor="phone">Phone</Label>
+                <div className="flex items-center">
+                  <Label htmlFor="phone">Phone</Label>
+                  {isFieldBeingEdited("phone") && (
+                    <EditingIndicator editingUser={isFieldBeingEdited("phone")!} />
+                  )}
+                </div>
                 <Input
                   id="phone"
                   type="tel"
                   value={form.data.phone}
                   onChange={(e) => form.setData("phone", e.target.value)}
+                  onFocus={() => startEditing("phone")}
+                  onBlur={stopEditing}
                   className="mt-1.5"
                 />
                 {form.errors.phone && (

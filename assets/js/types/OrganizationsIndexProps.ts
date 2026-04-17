@@ -1,5 +1,4 @@
-import type { Organization } from "./OrganizationSerializer";
-import type { FlopMeta } from "./FlopMetaSerializer";
+import type { TableResource } from "./TableResourceSerializer";
 import type { AuthProps } from "./AuthProps";
 /**
  * Props for Organizations/Index
@@ -7,9 +6,5 @@ import type { AuthProps } from "./AuthProps";
  * Generated from NbSerializer Inertia page declaration
  */
 export interface OrganizationsIndexProps extends AuthProps {
-  filterMode: string | null;
-  filters: Record<string, any>;
-  meta: FlopMeta;
-  organizations: Organization;
-  [key: string]: unknown;
+  organizations: TableResource;
 }

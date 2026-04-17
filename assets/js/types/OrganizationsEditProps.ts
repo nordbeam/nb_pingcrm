@@ -7,5 +7,4 @@ import type { AuthProps } from "./AuthProps";
  */
 export interface OrganizationsEditProps extends AuthProps {
   organization: Organization;
-  [key: string]: unknown;
 }

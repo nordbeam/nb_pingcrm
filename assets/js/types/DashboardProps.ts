@@ -1,3 +1,4 @@
+import type { Activity } from "./ActivitySerializer";
 import type { AuthProps } from "./AuthProps";
 /**
  * Props for Dashboard
@@ -5,6 +6,6 @@ import type { AuthProps } from "./AuthProps";
  * Generated from NbSerializer Inertia page declaration
  */
 export interface DashboardProps extends AuthProps {
+  activities: Activity[];
   stats: Record<string, any>;
-  [key: string]: unknown;
 }

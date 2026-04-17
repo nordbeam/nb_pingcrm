@@ -57,7 +57,7 @@ export { FilterValueSelect } from './FilterValueSelect';
 export { FilterValueInput } from './FilterValueInput';
 export { FilterModeToggle } from './FilterModeToggle';
 
-// Filter utilities
+// Filter utilities (legacy)
 export {
   OPERATOR_LABELS,
   getOperatorLabel,
@@ -66,7 +66,35 @@ export {
   formatFilterValue,
 } from './filterOperators';
 
+// Filter utilities (DSL-based)
+export {
+  clauseToFlopOp,
+  flopOpToClause,
+  transformFilterValue,
+  getClauseLabel,
+  getInputTypeForFilterType,
+  clauseRequiresValue,
+  formatFilterValue as formatDslFilterValue,
+} from './filterUtils';
+
 // TanStack Table components
 export { DataTable, DataTableContext, useDataTableContext } from './DataTable';
 export type { DataTableProps, DataTableContextValue, ColumnDef } from './DataTable';
 export { SortableColumnHeader } from './SortableColumnHeader';
+
+// Table Resource component and types
+export { Table } from './Table';
+export type { TableProps } from './Table';
+export type {
+  TableResource,
+  TableColumn,
+  TableAction,
+  TableBulkAction,
+  TableFilter,
+  TableMeta,
+  TableState,
+  TableEmptyState,
+  TableExport,
+  TableViews,
+  Selection,
+} from './tableTypes';

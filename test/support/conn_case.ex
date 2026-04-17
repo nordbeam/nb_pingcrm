@@ -29,6 +29,7 @@ defmodule NbPingcrmWeb.ConnCase do
       # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest
+      import NbInertia.TestHelpers
       import NbPingcrmWeb.ConnCase
     end
   end

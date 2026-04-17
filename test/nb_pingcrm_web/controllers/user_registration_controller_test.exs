@@ -6,10 +6,11 @@ defmodule NbPingcrmWeb.UserRegistrationControllerTest do
   describe "GET /users/register" do
     test "renders registration page", %{conn: conn} do
       conn = get(conn, ~p"/users/register")
-      response = html_response(conn, 200)
-      assert response =~ "Register"
-      assert response =~ ~p"/users/log-in"
-      assert response =~ ~p"/users/register"
+
+      assert_inertia_page(conn, "Auth/Register")
+      assert_inertia_props(conn, [:user, :account, :flash, :errors])
+      assert_shared_prop(conn, :user, nil)
+      assert_shared_prop(conn, :account, nil)
     end
 
     test "redirects if already logged in", %{conn: conn} do
@@ -42,9 +43,9 @@ defmodule NbPingcrmWeb.UserRegistrationControllerTest do
           "user" => %{"email" => "with spaces"}
         })
 
-      response = html_response(conn, 200)
-      assert response =~ "Register"
-      assert response =~ "must have the @ sign and no spaces"
+      assert_inertia_page(conn, "Auth/Register")
+      assert_inertia_props(conn, [:errors])
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Please fix the errors below."
     end
   end
 end

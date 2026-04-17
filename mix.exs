@@ -78,6 +78,7 @@ defmodule NbPingcrm.MixProject do
       {:nb_ts, path: "../nb_ts", override: true},
       {:nb_flop, path: "../nb_flop", override: true},
       {:flop, "~> 0.26"},
+      {:csv, "~> 3.2"},
       {:deno_rider, "~> 0.2"},
       {:igniter, "~> 0.7"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}

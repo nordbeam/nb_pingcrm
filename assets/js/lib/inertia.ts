@@ -41,9 +41,6 @@ export {
   useModal,
   useIsInModal,
   useModalPageContext,
-  // Modal backdrop preservation
-  setupModalInterceptor,
-  isModalInterceptorRegistered,
   // Types and config
   DEFAULT_MODAL_CONFIG,
   mergeModalConfig,
@@ -60,13 +57,15 @@ export type {
   ModalOnBase,
 } from '@nordbeam/nb-inertia/react/modals';
 
-// Custom ModalStackRenderer using shadcn (app-specific, not from nb_inertia)
-export { ModalStackRenderer } from '@/components/ModalStackRenderer';
+// Custom ModalStackRenderer using shadcn (copied from nb_inertia, customizable)
+export { ModalStackRenderer } from '@/components/modals';
 
 // Re-export other utilities from Inertia
 export {
   useRemember,
   usePoll,
   createInertiaApp,
+  http,
+  config,
   WhenVisible,
 } from '@inertiajs/react';

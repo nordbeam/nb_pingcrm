@@ -9,28 +9,36 @@ import { Loader2, Mail, Lock, Sparkles } from "lucide-react";
 
 export default function Login() {
   const { props } = usePage<AuthLoginProps>();
-  const { flash } = props;
-  const [loginMethod, setLoginMethod] = useState<"password" | "magic">("password");
+  const { flash, email, sudoMode, mode } = props;
+  const [loginMethod, setLoginMethod] = useState<"password" | "magic">(
+    mode === "magic" ? "magic" : "password"
+  );
 
   const passwordForm = useForm(
     {
-      email: "",
+      email: email ?? "",
       password: "",
-      remember: false,
+      remember_me: false,
     },
     user_sessions.create()
   );
 
   const magicForm = useForm(
     {
-      email: "",
+      email: email ?? "",
     },
-    { url: "/users/magic-link", method: "post" }
+    user_sessions.create()
   );
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    passwordForm.transform((data) => ({ user: data }));
+    passwordForm.transform((data) => ({
+      user: {
+        email: data.email,
+        password: data.password,
+        remember_me: data.remember_me ? "true" : "false",
+      },
+    }));
     passwordForm.submit({
       onFinish: () => passwordForm.reset("password"),
     });
@@ -95,17 +103,21 @@ export default function Login() {
 
             {/* Header */}
             <div className="mb-8">
-              <h2 className="text-xl font-semibold text-foreground">
-                Welcome back
-              </h2>
+              <h2 className="text-xl font-semibold text-foreground">Log in</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Don't have an account?{" "}
-                <Link
-                  href="/users/register"
-                  className="font-medium text-primary hover:text-primary/80 transition-colors"
-                >
-                  Create one
-                </Link>
+                {sudoMode ? (
+                  "You need to reauthenticate to continue."
+                ) : (
+                  <>
+                    Don't have an account?{" "}
+                    <Link
+                      href="/users/register"
+                      className="font-medium text-primary hover:text-primary/80 transition-colors"
+                    >
+                      Create one
+                    </Link>
+                  </>
+                )}
               </p>
             </div>
 
@@ -173,6 +185,7 @@ export default function Login() {
                       required
                       value={passwordForm.data.email}
                       onChange={(e) => passwordForm.setData("email", e.target.value)}
+                      readOnly={sudoMode}
                       className="pl-9"
                       placeholder="you@example.com"
                     />
@@ -215,8 +228,10 @@ export default function Login() {
                   <input
                     id="remember"
                     type="checkbox"
-                    checked={passwordForm.data.remember}
-                    onChange={(e) => passwordForm.setData("remember", e.target.checked)}
+                    checked={passwordForm.data.remember_me}
+                    onChange={(e) =>
+                      passwordForm.setData("remember_me", e.target.checked)
+                    }
                     className="h-4 w-4 rounded border-border text-primary focus:ring-primary/20"
                   />
                   <label htmlFor="remember" className="ml-2 text-sm text-muted-foreground">
@@ -260,6 +275,7 @@ export default function Login() {
                       required
                       value={magicForm.data.email}
                       onChange={(e) => magicForm.setData("email", e.target.value)}
+                      readOnly={sudoMode}
                       className="pl-9"
                       placeholder="you@example.com"
                     />

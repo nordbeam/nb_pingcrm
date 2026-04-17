@@ -1,135 +1,35 @@
-import { useState, useMemo } from "react";
-import { Head, usePage } from "@/lib/inertia";
-import { router } from "@/lib/inertia";
-import type { UsersIndexProps, User } from "@/types";
+import { Head, usePage, ClientModalLink, router } from "@/lib/inertia";
+import type { UsersIndexProps } from "@/types";
+import type { TableResource } from "@/components/flop";
+import { Table } from "@/components/flop";
 import { users as usersRoutes } from "@/routes";
-import {
-  useFlopParams,
-  flopToQueryParams,
-  Pagination,
-  FilterBar,
-  DataTable,
-  type FilterMode,
-  type FlopOperator,
-} from "@/components/flop";
-import { PageHeader } from "@/components/PageHeader";
-import { SearchInput } from "@/components/SearchInput";
-import { usersFilterConfig } from "./filterConfig";
-import { createColumns } from "./columns";
+import { cn } from "@/lib/utils";
+import { UserFormSkeleton } from "@/components/UserFormSkeleton";
+import { useTableRealtime } from "@/hooks/useTableRealtime";
+import { CircleDot } from "lucide-react";
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  owner: boolean;
+  photo: string | null;
+  deletedAt: string | null;
+}
 
 export default function UsersIndex() {
   const { props } = usePage<UsersIndexProps>();
-  const users = props.users as unknown as User[];
-  const { meta, filters } = props;
+  const users = props.users as TableResource<User>;
 
-  const [search, setSearch] = useState(filters?.search || "");
-  const [filterMode, setFilterMode] = useState<FilterMode>(
-    ((props as Record<string, unknown>).filter_mode as FilterMode) || "all"
-  );
-
-  const flop = useFlopParams(meta, {
-    onParamsChange: (params) => {
-      const query = {
-        ...flopToQueryParams(params),
-        search: search || undefined,
-        role: filters?.role || undefined,
-        trashed: filters?.trashed || undefined,
-        filter_mode: filterMode !== "all" ? filterMode : undefined,
-      };
-
-      router.visit(usersRoutes.index({ query }), {
-        preserveState: true,
-        preserveScroll: true,
-      });
-    },
+  // Real-time updates
+  const { data, isHighlighted } = useTableRealtime<User>({
+    initialData: users.data,
+    topic: "crm:users",
+    createEvent: "user_created",
+    updateEvent: "user_updated",
+    deleteEvent: "user_deleted",
+    recordKey: "user",
   });
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    router.visit(
-      usersRoutes.index({
-        query: {
-          search: search || undefined,
-          role: filters?.role || undefined,
-          trashed: filters?.trashed || undefined,
-          filter_mode: filterMode !== "all" ? filterMode : undefined,
-        },
-      }),
-      { preserveState: true }
-    );
-  };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearch(value);
-
-    if (!value && filters?.search) {
-      router.visit(
-        usersRoutes.index({
-          query: {
-            role: filters?.role || undefined,
-            trashed: filters?.trashed || undefined,
-            filter_mode: filterMode !== "all" ? filterMode : undefined,
-          },
-        }),
-        { preserveState: true }
-      );
-    }
-  };
-
-  const handleCustomFilterChange = (param: string, value: unknown) => {
-    const query: Record<string, unknown> = {
-      search: filters?.search,
-      role: filters?.role,
-      trashed: filters?.trashed,
-      filter_mode: filterMode !== "all" ? filterMode : undefined,
-    };
-    query[param] = value;
-
-    router.visit(usersRoutes.index({ query }), { preserveState: true });
-  };
-
-  const handleFilterModeChange = (mode: FilterMode) => {
-    setFilterMode(mode);
-    router.visit(
-      usersRoutes.index({
-        query: {
-          ...flopToQueryParams(flop.params),
-          search: filters?.search,
-          role: filters?.role,
-          trashed: filters?.trashed,
-          filter_mode: mode !== "all" ? mode : undefined,
-        },
-      }),
-      { preserveState: true }
-    );
-  };
-
-  const handleClearFilters = () => {
-    flop.clearFilters();
-    router.visit(usersRoutes.index({ query: { search: filters?.search } }), {
-      preserveState: true,
-    });
-  };
-
-  const handleDelete = (user: User) => {
-    if (confirm(`Are you sure you want to delete ${user.name}?`)) {
-      router.visit(usersRoutes.delete(user.id));
-    }
-  };
-
-  const handleRestore = (user: User) => {
-    router.visit(usersRoutes.restore(user.id));
-  };
-
-  const columns = useMemo(
-    () =>
-      createColumns({
-        onDelete: handleDelete,
-        onRestore: handleRestore,
-      }),
-    []
-  );
 
   return (
     <>
@@ -137,68 +37,100 @@ export default function UsersIndex() {
 
       <div className="px-6 py-6">
         <div className="mx-auto max-w-5xl">
-          <PageHeader
-            title="Users"
-            description="Manage team members and their permissions."
-            action={{
-              label: "New user",
-              href: usersRoutes.new(),
-            }}
-          />
-
-          {/* Search and Filters */}
-          <div className="mb-4 space-y-3">
-            <SearchInput
-              value={search}
-              onChange={handleSearchChange}
-              onSubmit={handleSearch}
-              placeholder="Search users..."
-            />
-
-            <FilterBar
-              configs={usersFilterConfig}
-              filters={flop.params.filters ?? []}
-              customFilters={filters}
-              filterMode={filterMode}
-              onFilterChange={(field, op, value) =>
-                flop.setFilter(field, op as FlopOperator, value)
-              }
-              onFilterRemove={(field, op) =>
-                flop.removeFilter(field, op as FlopOperator | undefined)
-              }
-              onCustomFilterChange={handleCustomFilterChange}
-              onClearFilters={handleClearFilters}
-              onFilterModeChange={handleFilterModeChange}
-            />
+          {/* Page Header */}
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">Users</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Manage team members and their permissions.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <CircleDot className="h-2 w-2 animate-pulse text-green-500" />
+                Live
+              </span>
+              <ClientModalLink
+                href={usersRoutes.new()}
+                loadingComponent={UserFormSkeleton}
+                modalConfig={{ slideover: true, position: "right" }}
+                prefetch
+              >
+                <button className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                  New user
+                </button>
+              </ClientModalLink>
+            </div>
           </div>
 
           {/* Table */}
-          <div className="rounded-lg border border-border bg-card">
-            <DataTable
-              columns={columns}
-              data={users}
-              meta={meta}
-              onSortChange={flop.setSort}
-              getSortDirection={flop.getSortDirection}
-              emptyState="No users found."
-              rowClassName={(row) =>
-                row.original.deletedAt ? "bg-muted/50 opacity-60" : ""
+          <Table
+            resource={{ ...users, data }}
+            baseUrl="/users"
+            rowClassName={(row) => {
+              const classes: string[] = [];
+              if (row.deletedAt) classes.push("bg-muted/50 opacity-60");
+              if (isHighlighted(row.id)) {
+                classes.push(
+                  "animate-pulse bg-primary/10 ring-1 ring-primary/20"
+                );
               }
-            />
+              return classes.join(" ");
+            }}
+            onRowClick={(row) => {
+              router.visit(usersRoutes.edit(row.id));
+            }}
+            renderCell={(column, value, row) => {
+              // Custom rendering for name column to include photo
+              if (column.key === "name") {
+                return (
+                  <div className="flex items-center gap-3">
+                    {row.photo ? (
+                      <img
+                        src={row.photo}
+                        alt=""
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                        {row.name?.charAt(0)?.toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-medium">{row.name}</div>
+                      {row.deletedAt && (
+                        <span className="text-xs text-muted-foreground">
+                          (deleted)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
 
-            {meta.totalPages && meta.totalPages > 1 && (
-              <div className="border-t border-border px-4 py-3">
-                <Pagination
-                  meta={meta}
-                  onPageChange={flop.setPage}
-                  className="flex items-center justify-center gap-1"
-                />
-              </div>
-            )}
-          </div>
+              // Custom rendering for owner badge - value is now "Owner" or "User" string
+              if (column.key === "owner") {
+                const isOwner = value === "Owner";
+                return (
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                      isOwner
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                        : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                    )}
+                  >
+                    {String(value)}
+                  </span>
+                );
+              }
+
+              return undefined; // Use default rendering
+            }}
+          />
 
           <div className="mt-3 text-xs text-muted-foreground">
-            {meta.totalCount} user{meta.totalCount !== 1 ? "s" : ""} total
+            {data.length} user{data.length !== 1 ? "s" : ""} total
           </div>
         </div>
       </div>

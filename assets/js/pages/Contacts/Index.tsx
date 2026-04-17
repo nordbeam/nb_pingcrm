@@ -1,138 +1,42 @@
-import { useState, useMemo } from "react";
-import { Head, usePage } from "@/lib/inertia";
-import { router } from "@/lib/inertia";
-import type { ContactsIndexProps, Contact } from "@/types";
+import { Head, usePage, ClientModalLink, router } from "@/lib/inertia";
+import type { ContactsIndexProps } from "@/types";
+import type { TableResource } from "@/components/flop";
+import { Table } from "@/components/flop";
 import { contacts as contactsRoutes } from "@/routes";
-import {
-  useFlopParams,
-  flopToQueryParams,
-  Pagination,
-  FilterBar,
-  DataTable,
-  type FilterMode,
-  type FlopOperator,
-  type FilterOption,
-} from "@/components/flop";
-import { PageHeader } from "@/components/PageHeader";
-import { SearchInput } from "@/components/SearchInput";
 import { ContactFormSkeleton } from "@/components/ContactFormSkeleton";
-import { contactsFilterConfig } from "./filterConfig";
-import { createColumns } from "./columns";
+import { useTableRealtime } from "@/hooks/useTableRealtime";
+import { CircleDot } from "lucide-react";
+
+interface Contact {
+  id: number;
+  name: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  postalCode: string | null;
+  organizationId: number | null;
+  organizationName: string | null;
+  deletedAt: string | null;
+}
 
 export default function ContactsIndex() {
   const { props } = usePage<ContactsIndexProps>();
-  const contacts = props.contacts as unknown as Contact[];
-  const { meta, filters } = props;
+  const contacts = props.contacts as TableResource<Contact>;
 
-  const filterOptions: Record<string, FilterOption[]> =
-    ((props as Record<string, unknown>).filter_options as Record<
-      string,
-      FilterOption[]
-    >) || {};
-
-  const [search, setSearch] = useState(filters?.search || "");
-  const [filterMode, setFilterMode] = useState<FilterMode>(
-    ((props as Record<string, unknown>).filter_mode as FilterMode) || "all"
-  );
-
-  const flop = useFlopParams(meta, {
-    onParamsChange: (params) => {
-      const query = {
-        ...flopToQueryParams(params),
-        search: search || undefined,
-        trashed: filters?.trashed || undefined,
-        filter_mode: filterMode !== "all" ? filterMode : undefined,
-      };
-
-      router.visit(contactsRoutes.index({ query }), {
-        preserveState: true,
-        preserveScroll: true,
-      });
-    },
+  // Real-time updates
+  const { data, isHighlighted } = useTableRealtime<Contact>({
+    initialData: contacts.data,
+    topic: "crm:contacts",
+    createEvent: "contact_created",
+    updateEvent: "contact_updated",
+    deleteEvent: "contact_deleted",
+    recordKey: "contact",
   });
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    router.visit(
-      contactsRoutes.index({
-        query: {
-          search: search || undefined,
-          trashed: filters?.trashed || undefined,
-          filter_mode: filterMode !== "all" ? filterMode : undefined,
-        },
-      }),
-      { preserveState: true }
-    );
-  };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearch(value);
-
-    if (!value && filters?.search) {
-      router.visit(
-        contactsRoutes.index({
-          query: {
-            trashed: filters?.trashed || undefined,
-            filter_mode: filterMode !== "all" ? filterMode : undefined,
-          },
-        }),
-        { preserveState: true }
-      );
-    }
-  };
-
-  const handleCustomFilterChange = (param: string, value: unknown) => {
-    const query: Record<string, unknown> = {
-      search: filters?.search,
-      trashed: filters?.trashed,
-      filter_mode: filterMode !== "all" ? filterMode : undefined,
-    };
-    query[param] = value;
-
-    router.visit(contactsRoutes.index({ query }), { preserveState: true });
-  };
-
-  const handleFilterModeChange = (mode: FilterMode) => {
-    setFilterMode(mode);
-    router.visit(
-      contactsRoutes.index({
-        query: {
-          ...flopToQueryParams(flop.params),
-          search: filters?.search,
-          trashed: filters?.trashed,
-          filter_mode: mode !== "all" ? mode : undefined,
-        },
-      }),
-      { preserveState: true }
-    );
-  };
-
-  const handleClearFilters = () => {
-    flop.clearFilters();
-    router.visit(contactsRoutes.index({ query: { search: filters?.search } }), {
-      preserveState: true,
-    });
-  };
-
-  const handleDelete = (contact: Contact) => {
-    if (confirm(`Are you sure you want to delete ${contact.name}?`)) {
-      router.visit(contactsRoutes.delete(contact.id));
-    }
-  };
-
-  const handleRestore = (contact: Contact) => {
-    router.visit(contactsRoutes.restore(contact.id));
-  };
-
-  const columns = useMemo(
-    () =>
-      createColumns({
-        onDelete: handleDelete,
-        onRestore: handleRestore,
-      }),
-    []
-  );
 
   return (
     <>
@@ -140,72 +44,82 @@ export default function ContactsIndex() {
 
       <div className="px-6 py-6">
         <div className="mx-auto max-w-5xl">
-          <PageHeader
-            title="Contacts"
-            description="Manage your contacts and their information."
-            action={{
-              label: "New contact",
-              href: contactsRoutes.new(),
-              loadingComponent: ContactFormSkeleton,
-              modalConfig: { slideover: true, position: "right" },
-              prefetch: true,
-            }}
-          />
-
-          {/* Search and Filters */}
-          <div className="mb-4 space-y-3">
-            <SearchInput
-              value={search}
-              onChange={handleSearchChange}
-              onSubmit={handleSearch}
-              placeholder="Search contacts..."
-            />
-
-            <FilterBar
-              configs={contactsFilterConfig}
-              filters={flop.params.filters ?? []}
-              customFilters={filters}
-              filterOptions={filterOptions}
-              filterMode={filterMode}
-              onFilterChange={(field, op, value) =>
-                flop.setFilter(field, op as FlopOperator, value)
-              }
-              onFilterRemove={(field, op) =>
-                flop.removeFilter(field, op as FlopOperator | undefined)
-              }
-              onCustomFilterChange={handleCustomFilterChange}
-              onClearFilters={handleClearFilters}
-              onFilterModeChange={handleFilterModeChange}
-            />
+          {/* Page Header */}
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">Contacts</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Manage your contacts and their information.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <CircleDot className="h-2 w-2 animate-pulse text-green-500" />
+                Live
+              </span>
+              <ClientModalLink
+                href={contactsRoutes.new()}
+                loadingComponent={ContactFormSkeleton}
+                modalConfig={{ slideover: true, position: "right" }}
+                prefetch
+              >
+                <button className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                  New contact
+                </button>
+              </ClientModalLink>
+            </div>
           </div>
 
           {/* Table */}
-          <div className="rounded-lg border border-border bg-card">
-            <DataTable
-              columns={columns}
-              data={contacts}
-              meta={meta}
-              onSortChange={flop.setSort}
-              getSortDirection={flop.getSortDirection}
-              emptyState="No contacts found."
-              rowClassName={(row) =>
-                row.original.deletedAt ? "bg-muted/50 opacity-60" : ""
+          <Table
+            resource={{ ...contacts, data }}
+            baseUrl="/contacts"
+            rowClassName={(row) => {
+              const classes: string[] = [];
+              if (row.deletedAt) classes.push("bg-muted/50 opacity-60");
+              if (isHighlighted(row.id)) {
+                classes.push(
+                  "animate-pulse bg-primary/10 ring-1 ring-primary/20"
+                );
               }
-            />
+              return classes.join(" ");
+            }}
+            onRowClick={(row) => {
+              router.visit(contactsRoutes.edit(row.id));
+            }}
+            renderCell={(column, value, row) => {
+              // Custom rendering for name with delete indicator
+              if (column.key === "name") {
+                return (
+                  <div>
+                    <div className="font-medium">{row.name}</div>
+                    {row.deletedAt && (
+                      <span className="text-xs text-muted-foreground">(deleted)</span>
+                    )}
+                  </div>
+                );
+              }
 
-            {meta.totalPages && meta.totalPages > 1 && (
-              <div className="border-t border-border px-4 py-3">
-                <Pagination
-                  meta={meta}
-                  onPageChange={flop.setPage}
-                  className="flex items-center justify-center gap-1"
-                />
-              </div>
-            )}
-          </div>
+              // Custom rendering for organization
+              if (column.key === "organizationName") {
+                if (!row.organizationName) return null;
+                return (
+                  <span className="text-muted-foreground">{row.organizationName}</span>
+                );
+              }
+
+              // Custom rendering for location
+              if (column.key === "city") {
+                const parts = [row.city, row.region].filter(Boolean);
+                return parts.length > 0 ? parts.join(", ") : null;
+              }
+
+              return undefined; // Use default rendering
+            }}
+          />
 
           <div className="mt-3 text-xs text-muted-foreground">
-            {meta.totalCount} contact{meta.totalCount !== 1 ? "s" : ""} total
+            {data.length} contact{data.length !== 1 ? "s" : ""} total
           </div>
         </div>
       </div>

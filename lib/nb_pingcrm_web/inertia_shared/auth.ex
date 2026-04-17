@@ -26,8 +26,8 @@ defmodule NbPingcrmWeb.InertiaShared.Auth do
       user = scope.user |> NbPingcrm.Repo.preload(:account)
 
       Map.merge(base_props, %{
-        user: {UserSerializer, user},
-        account: {AccountSerializer, user.account}
+        user: user,
+        account: user.account
       })
     else
       Map.merge(base_props, %{

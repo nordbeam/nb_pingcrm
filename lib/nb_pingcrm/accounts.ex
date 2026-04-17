@@ -4,6 +4,7 @@ defmodule NbPingcrm.Accounts do
   """
 
   import Ecto.Query, warn: false
+  alias NbPingcrm.Broadcaster
   alias NbPingcrm.Repo
 
   alias NbPingcrm.Accounts.{Account, User, UserNotifier, UserToken}
@@ -356,9 +357,15 @@ defmodule NbPingcrm.Accounts do
   Creates a user within an account.
   """
   def create_user(account_id, attrs) do
-    %User{account_id: account_id}
-    |> User.registration_changeset(attrs)
-    |> Repo.insert()
+    result =
+      %User{account_id: account_id}
+      |> User.registration_changeset(attrs)
+      |> Repo.insert()
+
+    with {:ok, user} <- result do
+      Broadcaster.broadcast_user_created(user)
+      {:ok, user}
+    end
   end
 
   @doc """
@@ -372,34 +379,57 @@ defmodule NbPingcrm.Accounts do
   Updates a user.
   """
   def update_user(user, attrs) do
-    user
-    |> User.changeset(attrs)
-    |> Repo.update()
+    result =
+      user
+      |> User.changeset(attrs)
+      |> Repo.update()
+
+    with {:ok, user} <- result do
+      Broadcaster.broadcast_user_updated(user)
+      {:ok, user}
+    end
   end
 
   @doc """
   Soft deletes a user by setting deleted_at.
   """
   def soft_delete_user(user) do
-    user
-    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now(:second))
-    |> Repo.update()
+    result =
+      user
+      |> Ecto.Changeset.change(deleted_at: DateTime.utc_now(:second))
+      |> Repo.update()
+
+    with {:ok, user} <- result do
+      Broadcaster.broadcast_user_deleted(user)
+      {:ok, user}
+    end
   end
 
   @doc """
   Restores a soft-deleted user.
   """
   def restore_user(user) do
-    user
-    |> Ecto.Changeset.change(deleted_at: nil)
-    |> Repo.update()
+    result =
+      user
+      |> Ecto.Changeset.change(deleted_at: nil)
+      |> Repo.update()
+
+    with {:ok, user} <- result do
+      Broadcaster.broadcast_user_restored(user)
+      {:ok, user}
+    end
   end
 
   @doc """
   Permanently deletes a user.
   """
   def delete_user(user) do
-    Repo.delete(user)
+    result = Repo.delete(user)
+
+    with {:ok, user} <- result do
+      Broadcaster.broadcast_user_deleted(user)
+      {:ok, user}
+    end
   end
 
   @doc """

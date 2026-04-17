@@ -7,5 +7,4 @@ import type { AuthProps } from "./AuthProps";
  */
 export interface UsersEditProps extends AuthProps {
   user: User;
-  [key: string]: unknown;
 }

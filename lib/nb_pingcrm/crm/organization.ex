@@ -10,6 +10,7 @@ defmodule NbPingcrm.CRM.Organization do
     Flop.Schema,
     filterable: [:name, :email, :city, :country, :phone],
     sortable: [:name, :city, :country, :inserted_at],
+    compound_fields: [search: [:name, :email, :city, :phone]],
     default_pagination_type: :page,
     default_limit: 10,
     default_order: %{order_by: [:name], order_directions: [:asc]}

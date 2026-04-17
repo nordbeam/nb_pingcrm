@@ -1,11 +1,10 @@
 import React, { createElement } from "react";
-import axios from "axios";
 
-import { createInertiaApp, usePage } from "@inertiajs/react";
 import { hydrateRoot, createRoot } from "react-dom/client";
 import {
+  createInertiaApp,
+  http,
   ModalStackProvider,
-  setupModalInterceptor,
   ModalStackRenderer,
   InitialModalHandler,
 } from "@/lib/inertia";
@@ -14,11 +13,26 @@ import {
 import AppLayout from "./layouts/AppLayout";
 import GuestLayout from "./layouts/GuestLayout";
 
-axios.defaults.xsrfHeaderName = "x-csrf-token";
+const getCsrfToken = () =>
+  document
+    .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+    ?.getAttribute("content");
 
-// Setup modal backdrop preservation interceptor
-// This modifies XHR modal responses to preserve the current page as backdrop
-setupModalInterceptor();
+http.onRequest((config) => {
+  const csrfToken = getCsrfToken();
+
+  if (!csrfToken) {
+    return config;
+  }
+
+  return {
+    ...config,
+    headers: {
+      ...(config.headers ?? {}),
+      "x-csrf-token": csrfToken,
+    },
+  };
+});
 
 const pages = import.meta.glob("./pages/**/*.tsx");
 

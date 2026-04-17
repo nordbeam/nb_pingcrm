@@ -2,19 +2,17 @@ defmodule NbPingcrmWeb.ContactsController do
   use NbPingcrmWeb, :controller
   use NbInertia.Controller
 
+  alias NbFlop.Serializers.TableResourceSerializer
   alias NbPingcrm.CRM
   alias NbPingcrm.CRM.Contact
   alias NbPingcrmWeb.InertiaShared.Auth
-  alias NbPingcrmWeb.Serializers.{ContactSerializer, FlopMetaSerializer, OrganizationSerializer}
+  alias NbPingcrmWeb.Serializers.{ContactSerializer, OrganizationSerializer}
+  alias NbPingcrmWeb.Tables.ContactsTable
 
   inertia_shared(Auth)
 
   inertia_page :contacts_index do
-    prop(:contacts, ContactSerializer)
-    prop(:meta, FlopMetaSerializer)
-    prop(:filters, :map)
-    prop(:filter_mode, :string, nullable: true)
-    prop(:filter_options, :map, nullable: true)
+    prop(:contacts, TableResourceSerializer)
   end
 
   inertia_page :contacts_create do
@@ -29,43 +27,17 @@ defmodule NbPingcrmWeb.ContactsController do
   def index(conn, params) do
     account_id = conn.assigns.current_scope.user.account_id
 
-    # Load organizations for filter dropdown
-    organizations = CRM.list_organizations_for_select(account_id)
+    # Build scoped query for multi-tenant filtering
+    query =
+      Contact
+      |> Contact.for_account(account_id)
+      |> Contact.filter_trashed(params["trashed"])
+      |> Contact.search(params["search"])
 
-    organization_options =
-      Enum.map(organizations, fn org ->
-        %{value: org.id, label: org.name}
-      end)
-
-    # Debug: Log incoming params
-    require Logger
-    Logger.debug("ContactsController.index params: #{inspect(params)}")
-
-    case CRM.list_contacts(account_id, params) do
-      {:ok, {contacts, meta}} ->
-        contacts = NbPingcrm.Repo.preload(contacts, :organization)
-
-        render_inertia(conn, :contacts_index,
-          contacts: {ContactSerializer, contacts},
-          meta: {FlopMetaSerializer, meta, schema: Contact},
-          filters: %{
-            search: params["search"],
-            trashed: params["trashed"]
-          },
-          filter_mode: params["filter_mode"],
-          filter_options: %{
-            organizations: organization_options
-          }
-        )
-
-      {:error, changeset} ->
-        # Debug: Log the actual error
-        Logger.error("ContactsController.index Flop error: #{inspect(changeset)}")
-
-        conn
-        |> put_flash(:error, "Invalid parameters")
-        |> redirect(to: ~p"/contacts")
-    end
+    # preload: :organization is automatically inferred from column definition
+    render_inertia(conn, :contacts_index,
+      contacts: ContactsTable.make(conn, params, query: query)
+    )
   end
 
   def new(conn, _params) do

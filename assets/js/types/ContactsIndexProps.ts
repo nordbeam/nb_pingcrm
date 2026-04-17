@@ -1,5 +1,4 @@
-import type { Contact } from "./ContactSerializer";
-import type { FlopMeta } from "./FlopMetaSerializer";
+import type { TableResource } from "./TableResourceSerializer";
 import type { AuthProps } from "./AuthProps";
 /**
  * Props for Contacts/Index
@@ -7,10 +6,5 @@ import type { AuthProps } from "./AuthProps";
  * Generated from NbSerializer Inertia page declaration
  */
 export interface ContactsIndexProps extends AuthProps {
-  contacts: Contact;
-  filterMode: string | null;
-  filterOptions: Record<string, any> | null;
-  filters: Record<string, any>;
-  meta: FlopMeta;
-  [key: string]: unknown;
+  contacts: TableResource;
 }

@@ -2,18 +2,17 @@ defmodule NbPingcrmWeb.OrganizationsController do
   use NbPingcrmWeb, :controller
   use NbInertia.Controller
 
+  alias NbFlop.Serializers.TableResourceSerializer
   alias NbPingcrm.CRM
   alias NbPingcrm.CRM.Organization
   alias NbPingcrmWeb.InertiaShared.Auth
-  alias NbPingcrmWeb.Serializers.{FlopMetaSerializer, OrganizationSerializer}
+  alias NbPingcrmWeb.Serializers.OrganizationSerializer
+  alias NbPingcrmWeb.Tables.OrganizationsTable
 
   inertia_shared(Auth)
 
   inertia_page :organizations_index do
-    prop(:organizations, OrganizationSerializer)
-    prop(:meta, FlopMetaSerializer)
-    prop(:filters, :map)
-    prop(:filter_mode, :string, nullable: true)
+    prop(:organizations, TableResourceSerializer)
   end
 
   inertia_page :organizations_create do
@@ -26,23 +25,16 @@ defmodule NbPingcrmWeb.OrganizationsController do
   def index(conn, params) do
     account_id = conn.assigns.current_scope.user.account_id
 
-    case CRM.list_organizations(account_id, params) do
-      {:ok, {organizations, meta}} ->
-        render_inertia(conn, :organizations_index,
-          organizations: {OrganizationSerializer, organizations},
-          meta: {FlopMetaSerializer, meta, schema: Organization},
-          filters: %{
-            search: params["search"],
-            trashed: params["trashed"]
-          },
-          filter_mode: params["filter_mode"]
-        )
+    # Build scoped query for multi-tenant filtering
+    query =
+      Organization
+      |> Organization.for_account(account_id)
+      |> Organization.filter_trashed(params["trashed"])
+      |> Organization.search(params["search"])
 
-      {:error, _changeset} ->
-        conn
-        |> put_flash(:error, "Invalid parameters")
-        |> redirect(to: ~p"/organizations")
-    end
+    render_inertia(conn, :organizations_index,
+      organizations: OrganizationsTable.make(conn, params, query: query)
+    )
   end
 
   def new(conn, _params) do

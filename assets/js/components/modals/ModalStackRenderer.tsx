@@ -134,8 +134,9 @@ function AnimatedModal({
         )
       ) : (
         // Show actual content with Suspense for lazy loading
+        // Pass handleClose as onClose prop so modal content can trigger close
         <Suspense fallback={<DefaultLoadingFallback />}>
-          <Component {...modal.props} />
+          <Component {...modal.props} onClose={handleClose} />
         </Suspense>
       )}
     </ModalPageProvider>

@@ -2,18 +2,17 @@ defmodule NbPingcrmWeb.UsersController do
   use NbPingcrmWeb, :controller
   use NbInertia.Controller
 
+  alias NbFlop.Serializers.TableResourceSerializer
   alias NbPingcrm.Accounts
   alias NbPingcrm.Accounts.User
   alias NbPingcrmWeb.InertiaShared.Auth
-  alias NbPingcrmWeb.Serializers.{FlopMetaSerializer, UserSerializer}
+  alias NbPingcrmWeb.Serializers.UserSerializer
+  alias NbPingcrmWeb.Tables.UsersTable
 
   inertia_shared(Auth)
 
   inertia_page :users_index do
-    prop(:users, UserSerializer)
-    prop(:meta, FlopMetaSerializer)
-    prop(:filters, :map)
-    prop(:filter_mode, :string, nullable: true)
+    prop(:users, TableResourceSerializer)
   end
 
   inertia_page :users_create do
@@ -26,24 +25,15 @@ defmodule NbPingcrmWeb.UsersController do
   def index(conn, params) do
     account_id = conn.assigns.current_scope.user.account_id
 
-    case Accounts.list_users(account_id, params) do
-      {:ok, {users, meta}} ->
-        render_inertia(conn, :users_index,
-          users: {UserSerializer, users},
-          meta: {FlopMetaSerializer, meta, schema: User},
-          filters: %{
-            search: params["search"],
-            role: params["role"],
-            trashed: params["trashed"]
-          },
-          filter_mode: params["filter_mode"]
-        )
+    # Build scoped query for multi-tenant filtering
+    query =
+      User
+      |> User.for_account(account_id)
+      |> User.filter_trashed(params["trashed"])
+      |> User.filter_by_role(params["role"])
+      |> User.search(params["search"])
 
-      {:error, _changeset} ->
-        conn
-        |> put_flash(:error, "Invalid parameters")
-        |> redirect(to: ~p"/users")
-    end
+    render_inertia(conn, :users_index, users: UsersTable.make(conn, params, query: query))
   end
 
   def new(conn, _params) do

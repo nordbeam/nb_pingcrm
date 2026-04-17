@@ -11,33 +11,31 @@ defmodule NbPingcrmWeb.UserSessionControllerTest do
   describe "GET /users/log-in" do
     test "renders login page", %{conn: conn} do
       conn = get(conn, ~p"/users/log-in")
-      response = html_response(conn, 200)
-      assert response =~ "Log in"
-      assert response =~ ~p"/users/register"
-      assert response =~ "Log in with email"
+
+      assert_inertia_page(conn, "Auth/Login")
+      assert_inertia_props(conn, [:mode, :email, :sudoMode, :user, :account, :flash])
+      assert_inertia_prop(conn, :mode, "password")
+      assert_inertia_prop(conn, :email, nil)
+      assert_inertia_prop(conn, :sudo_mode, false)
     end
 
     test "renders login page with email filled in (sudo mode)", %{conn: conn, user: user} do
-      html =
+      conn =
         conn
         |> log_in_user(user)
         |> get(~p"/users/log-in")
-        |> html_response(200)
 
-      assert html =~ "You need to reauthenticate"
-      refute html =~ "Register"
-      assert html =~ "Log in with email"
-
-      assert html =~
-               ~s(<input type="email" name="user[email]" id="login_form_magic_email" value="#{user.email}")
+      assert_inertia_page(conn, "Auth/Login")
+      assert_inertia_prop(conn, :email, user.email)
+      assert_inertia_prop(conn, :sudo_mode, true)
+      assert_shared_props(conn, [:user, :account, :flash])
     end
 
     test "renders login page (email + password)", %{conn: conn} do
       conn = get(conn, ~p"/users/log-in?mode=password")
-      response = html_response(conn, 200)
-      assert response =~ "Log in"
-      assert response =~ ~p"/users/register"
-      assert response =~ "Log in with email"
+
+      assert_inertia_page(conn, "Auth/Login")
+      assert_inertia_prop(conn, :mode, "password")
     end
   end
 
@@ -61,7 +59,7 @@ defmodule NbPingcrmWeb.UserSessionControllerTest do
       conn = get(conn, ~p"/users/log-in/#{token}")
       html = html_response(conn, 200)
       refute html =~ "Confirm my account"
-      assert html =~ "Log in"
+      assert html =~ "Keep me logged in on this device"
     end
 
     test "raises error for invalid token", %{conn: conn} do
@@ -85,12 +83,9 @@ defmodule NbPingcrmWeb.UserSessionControllerTest do
       assert get_session(conn, :user_token)
       assert redirected_to(conn) == ~p"/"
 
-      # Now do a logged in request and assert on the menu
       conn = get(conn, ~p"/")
-      response = html_response(conn, 200)
-      assert response =~ user.email
-      assert response =~ ~p"/users/settings"
-      assert response =~ ~p"/users/log-out"
+      assert_inertia_page(conn, "Dashboard")
+      assert_inertia_props(conn, [:stats, :activities, :user, :account])
     end
 
     test "logs the user in with remember me", %{conn: conn, user: user} do
@@ -132,9 +127,10 @@ defmodule NbPingcrmWeb.UserSessionControllerTest do
           "user" => %{"email" => user.email, "password" => "invalid_password"}
         })
 
-      response = html_response(conn, 200)
-      assert response =~ "Log in"
-      assert response =~ "Invalid email or password"
+      assert_inertia_page(conn, "Auth/Login")
+      assert_inertia_prop(conn, :mode, "password")
+      assert_inertia_prop(conn, :email, user.email)
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
     end
   end
 
@@ -160,12 +156,9 @@ defmodule NbPingcrmWeb.UserSessionControllerTest do
       assert get_session(conn, :user_token)
       assert redirected_to(conn) == ~p"/"
 
-      # Now do a logged in request and assert on the menu
       conn = get(conn, ~p"/")
-      response = html_response(conn, 200)
-      assert response =~ user.email
-      assert response =~ ~p"/users/settings"
-      assert response =~ ~p"/users/log-out"
+      assert_inertia_page(conn, "Dashboard")
+      assert_inertia_props(conn, [:stats, :activities, :user, :account])
     end
 
     test "confirms unconfirmed user", %{conn: conn, unconfirmed_user: user} do
@@ -184,12 +177,9 @@ defmodule NbPingcrmWeb.UserSessionControllerTest do
 
       assert Accounts.get_user!(user.id).confirmed_at
 
-      # Now do a logged in request and assert on the menu
       conn = get(conn, ~p"/")
-      response = html_response(conn, 200)
-      assert response =~ user.email
-      assert response =~ ~p"/users/settings"
-      assert response =~ ~p"/users/log-out"
+      assert_inertia_page(conn, "Dashboard")
+      assert_inertia_props(conn, [:stats, :activities, :user, :account])
     end
 
     test "emits error message when magic link is invalid", %{conn: conn} do
@@ -198,7 +188,9 @@ defmodule NbPingcrmWeb.UserSessionControllerTest do
           "user" => %{"token" => "invalid"}
         })
 
-      assert html_response(conn, 200) =~ "The link is invalid or it has expired."
+      assert_inertia_page(conn, "Auth/Login")
+      assert_inertia_prop(conn, :mode, "magic")
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "The link is invalid or it has expired."
     end
   end
 

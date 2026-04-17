@@ -9,5 +9,4 @@ import type { AuthProps } from "./AuthProps";
 export interface ContactsEditProps extends AuthProps {
   contact: Contact;
   organizations: Organization;
-  [key: string]: unknown;
 }
