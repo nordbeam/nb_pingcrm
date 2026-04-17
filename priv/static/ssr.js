@@ -1,12 +1,12 @@
 import * as React$1 from "react";
 import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactDOMServer from "react-dom/server";
-import { Link, createInertiaApp, router } from "@inertiajs/react";
+import { Link, createInertiaApp, router, router as router$1 } from "@inertiajs/react";
 import { useForm } from "@nordbeam/nb-inertia/react/useForm";
 import { Head } from "@nordbeam/nb-inertia/react/Head";
 import { ClientModalLink, ModalStackProvider, usePage } from "@nordbeam/nb-inertia/react/modals";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, BarChart3, Building2, Check, CheckCircle, CheckIcon, ChevronDownIcon, ChevronLeft, ChevronRight, ChevronRightIcon, ChevronUpIcon, ChevronsUpDown, Clock, Filter, Home, Info, Loader2, Lock, LogOut, Mail, MapPin, MoreHorizontal, PanelLeftIcon, Phone, Plus, RotateCcw, Search, SearchIcon, Settings, Sparkles, Trash2, TrendingUp, User, UserCircle, Users, X, XCircle, XIcon } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, BarChart3, Building2, Calendar, Check, CheckCircle, CheckIcon, ChevronDownIcon, ChevronLeft, ChevronRight, ChevronRightIcon, ChevronUpIcon, ChevronsUpDown, CircleDot, Clock, Eye, Filter, Home, Info, Loader2, Lock, LogOut, Mail, MapPin, MoreHorizontal, PanelLeftIcon, Pencil, Plus, RefreshCw, RotateCcw, Search, SearchIcon, Settings, Sparkles, Trash2, TrendingUp, User, UserPlus, Users, X, XCircle, XIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
@@ -16,9 +16,10 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import * as SelectPrimitive from "@radix-ui/react-select";
+import { createSocket, useChannel, useChannelProps, usePresence } from "@nordbeam/nb-inertia/react/realtime";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { Command } from "cmdk";
-import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { formatDistanceToNow } from "date-fns";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 var __defProp = Object.defineProperty;
 var __export = (all, symbols) => {
@@ -1464,17 +1465,17 @@ function ContactsCreate({ organizations: propOrganizations, onClose }) {
 			...form.data,
 			organization_id: form.data.organization_id === "_none" ? "" : form.data.organization_id
 		};
-		router.post(contacts.create.url(), data, {
+		router$1.post(contacts.create.url(), data, {
 			preserveScroll: true,
 			onSuccess: () => {
 				if (onClose) onClose();
-				router.visit(contacts.index());
+				router$1.visit(contacts.index());
 			}
 		});
 	};
 	const handleCancel = () => {
 		if (onClose) onClose();
-		else router.visit(contacts.index());
+		else router$1.visit(contacts.index());
 	};
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Head, { title: "Create Contact" }), /* @__PURE__ */ jsxs("div", {
 		className: "p-6",
@@ -1710,6 +1711,167 @@ function DeletedNotice({ entityName, onRestore }) {
 		})
 	});
 }
+const socket = createSocket("/socket", { params: () => {
+	return { _csrf_token: document.querySelector("meta[name=\"csrf-token\"]")?.content };
+} });
+socket.connect();
+function useRecordPresence({ type, id }) {
+	const { props } = usePage();
+	const currentUserId = props.user?.id;
+	const topic = `crm:${type}:${id}`;
+	useChannel(socket, topic, {});
+	const presenceList = usePresence(socket, topic).list();
+	const viewers = useMemo(() => {
+		const allViewers = [];
+		for (const entry of presenceList) for (const meta of entry.metas) if (meta.user_id !== currentUserId) allViewers.push({
+			userId: meta.user_id,
+			name: meta.name,
+			email: meta.email,
+			initials: meta.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+		});
+		const seen = /* @__PURE__ */ new Set();
+		return allViewers.filter((v) => {
+			if (seen.has(v.userId)) return false;
+			seen.add(v.userId);
+			return true;
+		});
+	}, [presenceList, currentUserId]);
+	return {
+		viewers,
+		isBeingViewedByOthers: viewers.length > 0,
+		viewerCount: viewers.length
+	};
+}
+function ViewerIndicator({ type, id }) {
+	const { viewers, isBeingViewedByOthers } = useRecordPresence({
+		type,
+		id
+	});
+	if (!isBeingViewedByOthers) return null;
+	const maxDisplay = 3;
+	const displayViewers = viewers.slice(0, maxDisplay);
+	const remainingCount = viewers.length - maxDisplay;
+	return /* @__PURE__ */ jsxs("div", {
+		className: "flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800/50 dark:bg-amber-900/20",
+		children: [/* @__PURE__ */ jsx(Eye, { className: "h-4 w-4 text-amber-600 dark:text-amber-400" }), /* @__PURE__ */ jsxs("div", {
+			className: "flex items-center gap-1",
+			children: [/* @__PURE__ */ jsx("span", {
+				className: "text-sm text-amber-800 dark:text-amber-200",
+				children: "Also viewing:"
+			}), /* @__PURE__ */ jsxs("div", {
+				className: "flex -space-x-2 ml-1",
+				children: [displayViewers.map((viewer) => /* @__PURE__ */ jsxs("div", {
+					className: "relative flex h-7 w-7 items-center justify-center rounded-full border-2 border-amber-50 bg-amber-100 text-xs font-medium text-amber-700 dark:border-amber-900/20 dark:bg-amber-800/50 dark:text-amber-200",
+					title: `${viewer.name} (${viewer.email})`,
+					children: [viewer.initials, /* @__PURE__ */ jsx("span", { className: "absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-amber-50 bg-green-500 dark:border-amber-900/20" })]
+				}, viewer.userId)), remainingCount > 0 && /* @__PURE__ */ jsxs("div", {
+					className: "flex h-7 w-7 items-center justify-center rounded-full border-2 border-amber-50 bg-amber-200 text-xs font-medium text-amber-700 dark:border-amber-900/20 dark:bg-amber-700 dark:text-amber-200",
+					children: ["+", remainingCount]
+				})]
+			})]
+		})]
+	});
+}
+function EditingIndicator({ editingUser }) {
+	const firstName = editingUser.name.split(" ")[0];
+	return /* @__PURE__ */ jsxs("span", {
+		className: "ml-2 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+		children: [
+			/* @__PURE__ */ jsx(Pencil, { className: "h-3 w-3 animate-pulse" }),
+			firstName,
+			" is editing"
+		]
+	});
+}
+function EditingBanner({ editingUsers }) {
+	if (editingUsers.length === 0) return null;
+	const userFields = editingUsers.reduce((acc, user) => {
+		if (!acc[user.userId]) acc[user.userId] = {
+			name: user.name,
+			fields: []
+		};
+		acc[user.userId].fields.push(user.field);
+		return acc;
+	}, {});
+	const userList = Object.values(userFields);
+	return /* @__PURE__ */ jsxs("div", {
+		className: "mb-4 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800/50 dark:bg-blue-900/20",
+		children: [/* @__PURE__ */ jsx(Pencil, { className: "h-4 w-4 animate-pulse text-blue-600 dark:text-blue-400" }), /* @__PURE__ */ jsx("span", {
+			className: "text-sm text-blue-800 dark:text-blue-200",
+			children: userList.map((u, i) => /* @__PURE__ */ jsxs("span", { children: [
+				i > 0 && (i === userList.length - 1 ? " and " : ", "),
+				/* @__PURE__ */ jsx("span", {
+					className: "font-medium",
+					children: u.name.split(" ")[0]
+				}),
+				" is editing ",
+				/* @__PURE__ */ jsx("span", {
+					className: "font-medium",
+					children: formatFields(u.fields)
+				})
+			] }, i))
+		})]
+	});
+}
+function formatFields(fields) {
+	const formatted = fields.map((f) => f.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()));
+	if (formatted.length === 1) return formatted[0];
+	if (formatted.length === 2) return `${formatted[0]} and ${formatted[1]}`;
+	return `${formatted.slice(0, -1).join(", ")}, and ${formatted[formatted.length - 1]}`;
+}
+function useEditingIndicator({ type, id }) {
+	const { props } = usePage();
+	const currentUserId = props.user?.id;
+	const topic = `crm:${type}:${id}`;
+	const [editingUsers, setEditingUsers] = useState([]);
+	const channelRef = useRef(null);
+	const currentFieldRef = useRef(null);
+	const debounceRef = useRef(null);
+	channelRef.current = useChannel(socket, topic, { user_editing: ({ user_id, name, editing, field }) => {
+		if (user_id === currentUserId) return;
+		if (editing && field) setEditingUsers((prev) => {
+			return [...prev.filter((u) => u.userId !== user_id), {
+				userId: user_id,
+				name,
+				field,
+				timestamp: Date.now()
+			}];
+		});
+		else setEditingUsers((prev) => prev.filter((u) => u.userId !== user_id));
+	} });
+	useEffect(() => {
+		const interval = setInterval(() => {
+			const cutoff = Date.now() - 3e4;
+			setEditingUsers((prev) => prev.filter((u) => u.timestamp > cutoff));
+		}, 1e4);
+		return () => clearInterval(interval);
+	}, []);
+	useEffect(() => {
+		return () => {
+			if (currentFieldRef.current && channelRef.current?.channel) channelRef.current.channel.push("editing", { editing: false });
+		};
+	}, []);
+	return {
+		startEditing: useCallback((field) => {
+			if (debounceRef.current) clearTimeout(debounceRef.current);
+			currentFieldRef.current = field;
+			debounceRef.current = setTimeout(() => {
+				if (channelRef.current?.channel) channelRef.current.channel.push("editing", {
+					editing: true,
+					field
+				});
+			}, 300);
+		}, []),
+		stopEditing: useCallback(() => {
+			if (debounceRef.current) clearTimeout(debounceRef.current);
+			currentFieldRef.current = null;
+			if (channelRef.current?.channel) channelRef.current.channel.push("editing", { editing: false });
+		}, []),
+		editingUsers,
+		isFieldBeingEdited: useCallback((field) => editingUsers.find((u) => u.field === field), [editingUsers]),
+		fieldsBeingEdited: editingUsers.map((u) => u.field)
+	};
+}
 var Edit_exports = /* @__PURE__ */ __export({ default: () => ContactsEdit }, 1);
 var COUNTRIES$2 = [
 	{
@@ -1745,6 +1907,10 @@ function ContactsEdit({ onClose }) {
 	const { props } = usePage();
 	const { contact } = props;
 	const organizations$1 = props.organizations;
+	const { startEditing, stopEditing, editingUsers, isFieldBeingEdited } = useEditingIndicator({
+		type: "contact",
+		id: contact.id
+	});
 	const form = useForm({
 		first_name: contact.firstName,
 		last_name: contact.lastName,
@@ -1763,35 +1929,42 @@ function ContactsEdit({ onClose }) {
 			...form.data,
 			organization_id: form.data.organization_id === "_none" ? "" : form.data.organization_id
 		};
-		router.put(contacts.update.url(contact.id), data, {
+		router$1.put(contacts.update.url(contact.id), data, {
 			preserveScroll: true,
 			onSuccess: () => {
 				if (onClose) onClose();
-				router.visit(contacts.index());
+				router$1.visit(contacts.index());
 			}
 		});
 	};
 	const handleDelete = () => {
-		if (confirm(`Are you sure you want to delete ${contact.name}?`)) router.visit(contacts.delete(contact.id));
+		if (confirm(`Are you sure you want to delete ${contact.name}?`)) router$1.visit(contacts.delete(contact.id));
 	};
 	const handleRestore = () => {
-		router.visit(contacts.restore(contact.id));
+		router$1.visit(contacts.restore(contact.id));
 	};
 	const handleCancel = () => {
 		if (onClose) onClose();
-		else router.visit(contacts.index());
+		else router$1.visit(contacts.index());
 	};
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Head, { title: `Edit ${contact.name}` }), /* @__PURE__ */ jsxs("div", {
 		className: "p-6",
 		children: [
-			/* @__PURE__ */ jsxs("h2", {
-				className: "text-lg font-semibold mb-6",
-				children: ["Edit ", contact.name]
+			/* @__PURE__ */ jsxs("div", {
+				className: "mb-6 flex items-start justify-between gap-4",
+				children: [/* @__PURE__ */ jsxs("h2", {
+					className: "text-lg font-semibold",
+					children: ["Edit ", contact.name]
+				}), /* @__PURE__ */ jsx(ViewerIndicator, {
+					type: "contact",
+					id: contact.id
+				})]
 			}),
 			contact.deletedAt && /* @__PURE__ */ jsx(DeletedNotice, {
 				entityName: "contact",
 				onRestore: handleRestore
 			}),
+			/* @__PURE__ */ jsx(EditingBanner, { editingUsers }),
 			/* @__PURE__ */ jsxs("form", {
 				onSubmit: handleSubmit,
 				className: "space-y-5",
@@ -1799,14 +1972,19 @@ function ContactsEdit({ onClose }) {
 					/* @__PURE__ */ jsxs("div", {
 						className: "grid gap-5 sm:grid-cols-2",
 						children: [/* @__PURE__ */ jsxs("div", { children: [
-							/* @__PURE__ */ jsx(Label, {
-								htmlFor: "first_name",
-								children: "First Name"
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex items-center",
+								children: [/* @__PURE__ */ jsx(Label, {
+									htmlFor: "first_name",
+									children: "First Name"
+								}), isFieldBeingEdited("first_name") && /* @__PURE__ */ jsx(EditingIndicator, { editingUser: isFieldBeingEdited("first_name") })]
 							}),
 							/* @__PURE__ */ jsx(Input, {
 								id: "first_name",
 								value: form.data.first_name,
 								onChange: (e) => form.setData("first_name", e.target.value),
+								onFocus: () => startEditing("first_name"),
+								onBlur: stopEditing,
 								className: "mt-1.5"
 							}),
 							form.errors.first_name && /* @__PURE__ */ jsx("p", {
@@ -1814,14 +1992,19 @@ function ContactsEdit({ onClose }) {
 								children: form.errors.first_name
 							})
 						] }), /* @__PURE__ */ jsxs("div", { children: [
-							/* @__PURE__ */ jsx(Label, {
-								htmlFor: "last_name",
-								children: "Last Name"
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex items-center",
+								children: [/* @__PURE__ */ jsx(Label, {
+									htmlFor: "last_name",
+									children: "Last Name"
+								}), isFieldBeingEdited("last_name") && /* @__PURE__ */ jsx(EditingIndicator, { editingUser: isFieldBeingEdited("last_name") })]
 							}),
 							/* @__PURE__ */ jsx(Input, {
 								id: "last_name",
 								value: form.data.last_name,
 								onChange: (e) => form.setData("last_name", e.target.value),
+								onFocus: () => startEditing("last_name"),
+								onBlur: stopEditing,
 								className: "mt-1.5"
 							}),
 							form.errors.last_name && /* @__PURE__ */ jsx("p", {
@@ -1857,15 +2040,20 @@ function ContactsEdit({ onClose }) {
 					/* @__PURE__ */ jsxs("div", {
 						className: "grid gap-5 sm:grid-cols-2",
 						children: [/* @__PURE__ */ jsxs("div", { children: [
-							/* @__PURE__ */ jsx(Label, {
-								htmlFor: "email",
-								children: "Email"
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex items-center",
+								children: [/* @__PURE__ */ jsx(Label, {
+									htmlFor: "email",
+									children: "Email"
+								}), isFieldBeingEdited("email") && /* @__PURE__ */ jsx(EditingIndicator, { editingUser: isFieldBeingEdited("email") })]
 							}),
 							/* @__PURE__ */ jsx(Input, {
 								id: "email",
 								type: "email",
 								value: form.data.email,
 								onChange: (e) => form.setData("email", e.target.value),
+								onFocus: () => startEditing("email"),
+								onBlur: stopEditing,
 								className: "mt-1.5"
 							}),
 							form.errors.email && /* @__PURE__ */ jsx("p", {
@@ -1873,15 +2061,20 @@ function ContactsEdit({ onClose }) {
 								children: form.errors.email
 							})
 						] }), /* @__PURE__ */ jsxs("div", { children: [
-							/* @__PURE__ */ jsx(Label, {
-								htmlFor: "phone",
-								children: "Phone"
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex items-center",
+								children: [/* @__PURE__ */ jsx(Label, {
+									htmlFor: "phone",
+									children: "Phone"
+								}), isFieldBeingEdited("phone") && /* @__PURE__ */ jsx(EditingIndicator, { editingUser: isFieldBeingEdited("phone") })]
 							}),
 							/* @__PURE__ */ jsx(Input, {
 								id: "phone",
 								type: "tel",
 								value: form.data.phone,
 								onChange: (e) => form.setData("phone", e.target.value),
+								onFocus: () => startEditing("phone"),
+								onBlur: stopEditing,
 								className: "mt-1.5"
 							}),
 							form.errors.phone && /* @__PURE__ */ jsx("p", {
@@ -2006,207 +2199,6 @@ function ContactsEdit({ onClose }) {
 		]
 	})] });
 }
-function detectPaginationMode(meta) {
-	if (!meta) return "page";
-	if (meta.startCursor !== null || meta.endCursor !== null) return "cursor";
-	if (meta.currentOffset !== null) return "offset";
-	return "page";
-}
-function flopToQueryParams(params, options = {}) {
-	const { paginationType = "page", skipDefaultOrdering = false, skipFirstPage = true, defaultPageSize } = options;
-	const query = {};
-	if (!skipDefaultOrdering && params.orderBy?.length) params.orderBy.forEach((field) => {
-		const key = "order_by[]";
-		if (query[key]) query[key].push(field);
-		else query[key] = [field];
-	});
-	if (!skipDefaultOrdering && params.orderDirections?.length) params.orderDirections.forEach((dir) => {
-		const key = "order_directions[]";
-		if (query[key]) query[key].push(dir);
-		else query[key] = [dir];
-	});
-	if (paginationType === "page") {
-		if (params.page != null && !(skipFirstPage && params.page === 1)) query["page"] = String(params.page);
-		if (defaultPageSize !== void 0 && params.pageSize != null && params.pageSize !== defaultPageSize) query["page_size"] = String(params.pageSize);
-	} else if (paginationType === "offset") {
-		if (params.offset != null && params.offset !== 0) query["offset"] = String(params.offset);
-		if (params.limit != null) query["limit"] = String(params.limit);
-	} else if (paginationType === "cursor") {
-		if (params.first != null) query["first"] = String(params.first);
-		if (params.last != null) query["last"] = String(params.last);
-		if (params.after != null) query["after"] = params.after;
-		if (params.before != null) query["before"] = params.before;
-	}
-	if (params.filters?.length) params.filters.forEach((filter, index$7) => {
-		query[`filters[${index$7}][field]`] = filter.field;
-		query[`filters[${index$7}][op]`] = filter.op;
-		query[`filters[${index$7}][value]`] = String(filter.value);
-	});
-	return query;
-}
-function useFlopParams(meta, options = {}) {
-	const { onParamsChange, initialParams = {} } = options;
-	const [params, setParamsState] = useState(() => ({
-		...meta?.flop,
-		...initialParams
-	}));
-	const paginationMode = useMemo(() => detectPaginationMode(meta), [meta]);
-	const updateParams = useCallback((updater) => {
-		setParamsState((prev) => {
-			const next = updater(prev);
-			onParamsChange?.(next);
-			return next;
-		});
-	}, [onParamsChange]);
-	const setSort = useCallback((field, direction = "asc") => {
-		updateParams((prev) => ({
-			...prev,
-			orderBy: direction ? [field] : null,
-			orderDirections: direction ? [direction] : null,
-			page: paginationMode === "page" ? 1 : prev.page,
-			offset: paginationMode === "offset" ? 0 : prev.offset,
-			after: null,
-			before: null
-		}));
-	}, [updateParams, paginationMode]);
-	const toggleSort = useCallback((field) => {
-		const currentField = params.orderBy?.[0];
-		const currentDirection = params.orderDirections?.[0];
-		let newDirection;
-		if (currentField !== field) newDirection = "asc";
-		else if (currentDirection === "asc") newDirection = "desc";
-		else newDirection = null;
-		setSort(field, newDirection);
-	}, [
-		params.orderBy,
-		params.orderDirections,
-		setSort
-	]);
-	const clearSort = useCallback(() => {
-		updateParams((prev) => ({
-			...prev,
-			orderBy: null,
-			orderDirections: null
-		}));
-	}, [updateParams]);
-	const getSortDirection = useCallback((field) => {
-		const index$7 = params.orderBy?.indexOf(field) ?? -1;
-		if (index$7 === -1) return null;
-		const dir = params.orderDirections?.[index$7];
-		if (dir?.startsWith("asc")) return "asc";
-		if (dir?.startsWith("desc")) return "desc";
-		return null;
-	}, [params.orderBy, params.orderDirections]);
-	const setFilter = useCallback((field, op, value) => {
-		updateParams((prev) => {
-			const filters = prev.filters?.filter((f) => !(f.field === field && f.op === op)) ?? [];
-			return {
-				...prev,
-				filters: [...filters, {
-					field,
-					op,
-					value
-				}],
-				page: paginationMode === "page" ? 1 : prev.page,
-				offset: paginationMode === "offset" ? 0 : prev.offset,
-				after: null,
-				before: null
-			};
-		});
-	}, [updateParams, paginationMode]);
-	const removeFilter = useCallback((field, op) => {
-		updateParams((prev) => ({
-			...prev,
-			filters: prev.filters?.filter((f) => f.field !== field || op !== void 0 && f.op !== op),
-			page: paginationMode === "page" ? 1 : prev.page,
-			offset: paginationMode === "offset" ? 0 : prev.offset,
-			after: null,
-			before: null
-		}));
-	}, [updateParams, paginationMode]);
-	const clearFilters = useCallback(() => {
-		updateParams((prev) => ({
-			...prev,
-			filters: [],
-			page: paginationMode === "page" ? 1 : prev.page,
-			offset: paginationMode === "offset" ? 0 : prev.offset,
-			after: null,
-			before: null
-		}));
-	}, [updateParams, paginationMode]);
-	const getFilterValue = useCallback((field, op) => {
-		return (params.filters?.find((f) => f.field === field && (op === void 0 || f.op === op)))?.value;
-	}, [params.filters]);
-	const setPage = useCallback((page) => {
-		updateParams((prev) => ({
-			...prev,
-			page
-		}));
-	}, [updateParams]);
-	return {
-		params,
-		meta,
-		paginationMode,
-		setSort,
-		toggleSort,
-		clearSort,
-		getSortDirection,
-		setFilter,
-		removeFilter,
-		clearFilters,
-		getFilterValue,
-		setPage,
-		nextPage: useCallback(() => {
-			if (meta?.hasNextPage && meta.nextPage) setPage(meta.nextPage);
-		}, [meta, setPage]),
-		previousPage: useCallback(() => {
-			if (meta?.hasPreviousPage && meta.previousPage) setPage(meta.previousPage);
-		}, [meta, setPage]),
-		setPageSize: useCallback((size) => {
-			updateParams((prev) => ({
-				...prev,
-				pageSize: size,
-				page: 1
-			}));
-		}, [updateParams]),
-		setOffset: useCallback((offset) => {
-			updateParams((prev) => ({
-				...prev,
-				offset
-			}));
-		}, [updateParams]),
-		goToNextCursor: useCallback(() => {
-			if (meta?.hasNextPage && meta.endCursor) updateParams((prev) => ({
-				...prev,
-				after: meta.endCursor,
-				before: null
-			}));
-		}, [meta, updateParams]),
-		goToPreviousCursor: useCallback(() => {
-			if (meta?.hasPreviousPage && meta.startCursor) updateParams((prev) => ({
-				...prev,
-				before: meta.startCursor,
-				after: null
-			}));
-		}, [meta, updateParams]),
-		setParams: useCallback((newParams) => {
-			updateParams((prev) => ({
-				...prev,
-				...newParams
-			}));
-		}, [updateParams]),
-		resetParams: useCallback(() => {
-			updateParams(() => ({
-				...meta?.flop,
-				...initialParams
-			}));
-		}, [
-			updateParams,
-			meta,
-			initialParams
-		])
-	};
-}
 function getPageNumbers(currentPage, totalPages, maxVisible) {
 	if (totalPages <= maxVisible) return Array.from({ length: totalPages }, (_, i) => i + 1);
 	const pages$1 = [];
@@ -2319,45 +2311,87 @@ function PopoverContent({ className, align = "center", sideOffset = 4, ...props 
 		...props
 	}) });
 }
-const OPERATOR_LABELS = {
-	"==": "is",
-	"!=": "is not",
-	"ilike": "contains",
-	"not_ilike": "does not contain",
-	"like": "contains (case-sensitive)",
-	"not_like": "does not contain (case-sensitive)",
-	"empty": "is empty",
-	"not_empty": "is not empty",
-	">": "greater than",
-	"<": "less than",
-	">=": "at least",
-	"<=": "at most",
-	"in": "is any of",
-	"not_in": "is none of",
-	"=~": "matches"
+const CLAUSE_LABELS = {
+	equals: "is",
+	not_equals: "is not",
+	contains: "contains",
+	starts_with: "starts with",
+	ends_with: "ends with",
+	gt: "greater than",
+	gte: "at least",
+	lt: "less than",
+	lte: "at most",
+	between: "between",
+	in: "is any of",
+	not_in: "is none of",
+	empty: "is empty",
+	not_empty: "is not empty"
 };
-function getOperatorLabel(op) {
-	return OPERATOR_LABELS[op] || op;
+function getClauseLabel(clause) {
+	return CLAUSE_LABELS[clause] || clause;
 }
-function getDefaultOperator(type) {
-	switch (type) {
-		case "string": return "ilike";
-		case "boolean": return "==";
-		case "enum": return "==";
-		case "relation": return "==";
-		case "number": return "==";
-		case "date": return "==";
+function clauseToFlopOp(clause) {
+	switch (clause) {
+		case "equals": return "==";
+		case "not_equals": return "!=";
+		case "contains": return "ilike";
+		case "starts_with": return "ilike";
+		case "ends_with": return "ilike";
+		case "gt": return ">";
+		case "gte": return ">=";
+		case "lt": return "<";
+		case "lte": return "<=";
+		case "in": return "in";
+		case "not_in": return "not_in";
+		case "empty": return "empty";
+		case "not_empty": return "not_empty";
+		case "between": return ">=";
 		default: return "==";
 	}
 }
+function flopOpToClause(op) {
+	switch (op) {
+		case "==": return "equals";
+		case "!=": return "not_equals";
+		case "ilike":
+		case "like":
+		case "=~": return "contains";
+		case ">": return "gt";
+		case ">=": return "gte";
+		case "<": return "lt";
+		case "<=": return "lte";
+		case "in": return "in";
+		case "not_in": return "not_in";
+		case "empty": return "empty";
+		case "not_empty": return "not_empty";
+		default: return "equals";
+	}
+}
+function transformFilterValue(_clause, value) {
+	return value;
+}
 function formatFilterValue(value, options) {
 	if (value === null || value === void 0 || value === "") return "(empty)";
-	if (options) {
-		const option = options.find((o) => o.value === value);
+	if (options && options.length > 0) {
+		const option = options.find((o) => o.value === String(value));
 		if (option) return option.label;
 	}
 	if (typeof value === "boolean") return value ? "Yes" : "No";
-	return String(value);
+	let displayValue = String(value);
+	if (displayValue.startsWith("%")) displayValue = displayValue.slice(1);
+	if (displayValue.endsWith("%")) displayValue = displayValue.slice(0, -1);
+	return displayValue;
+}
+function getInputTypeForFilterType(type) {
+	switch (type) {
+		case "numeric": return "number";
+		case "date": return "date";
+		case "datetime": return "datetime-local";
+		default: return "text";
+	}
+}
+function clauseRequiresValue(clause) {
+	return clause !== "empty" && clause !== "not_empty";
 }
 function Command$1({ className, ...props }) {
 	return /* @__PURE__ */ jsx(Command, {
@@ -2405,22 +2439,39 @@ function CommandItem({ className, ...props }) {
 		...props
 	});
 }
-function FilterValueSelect({ options, value, onSelect, placeholder = "Search..." }) {
+function getColorClasses(variant) {
+	switch (variant) {
+		case "primary": return "bg-primary/20 text-primary";
+		case "success": return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+		case "warning": return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
+		case "danger": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+		case "muted": return "bg-muted text-muted-foreground";
+		default: return "bg-secondary text-secondary-foreground";
+	}
+}
+function FilterValueSelect({ options, value, onSelect, placeholder = "Search...", colors }) {
 	return /* @__PURE__ */ jsxs(Command$1, {
 		className: "rounded-lg border shadow-md",
 		children: [/* @__PURE__ */ jsx(CommandInput, { placeholder }), /* @__PURE__ */ jsxs(CommandList, { children: [/* @__PURE__ */ jsx(CommandEmpty, { children: "No results found." }), /* @__PURE__ */ jsx(CommandGroup, { children: options.map((option) => {
-			const Icon = option.icon;
-			const isSelected = option.value === value;
+			const isSelected = String(option.value) === String(value);
+			const colorVariant = colors?.[option.value] || colors?.[option.value.toLowerCase()];
 			return /* @__PURE__ */ jsxs(CommandItem, {
 				value: option.label,
 				onSelect: () => onSelect(option.value),
-				className: isSelected ? "bg-accent" : "",
-				children: [Icon && /* @__PURE__ */ jsx(Icon, { className: "mr-2 h-4 w-4" }), /* @__PURE__ */ jsx("span", { children: option.label })]
+				className: cn("flex items-center gap-2", isSelected && "bg-accent"),
+				children: [
+					colorVariant && /* @__PURE__ */ jsx("span", {
+						className: cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", getColorClasses(colorVariant)),
+						children: option.label
+					}),
+					!colorVariant && /* @__PURE__ */ jsx("span", { children: option.label }),
+					isSelected && /* @__PURE__ */ jsx(Check, { className: "ml-auto h-4 w-4 text-primary" })
+				]
 			}, String(option.value));
 		}) })] })]
 	});
 }
-function FilterValueInput({ value = "", onChange, placeholder = "Enter value...", type = "text", debounceMs = 500 }) {
+function FilterValueInput({ value = "", onChange, placeholder = "Enter value...", type = "text", min, max, debounceMs = 300 }) {
 	const [localValue, setLocalValue] = useState(value);
 	const timeoutRef = useRef(null);
 	useEffect(() => {
@@ -2449,7 +2500,7 @@ function FilterValueInput({ value = "", onChange, placeholder = "Enter value..."
 		if (timeoutRef.current) clearTimeout(timeoutRef.current);
 		if (localValue !== value) onChange(localValue);
 	};
-	return /* @__PURE__ */ jsx(Input, {
+	const inputProps = {
 		type,
 		value: localValue,
 		onChange: handleChange,
@@ -2457,48 +2508,56 @@ function FilterValueInput({ value = "", onChange, placeholder = "Enter value..."
 		onBlur: handleBlur,
 		placeholder,
 		className: "h-8"
-	});
+	};
+	if (type === "number") {
+		if (min !== void 0) inputProps.min = min;
+		if (max !== void 0) inputProps.max = max;
+		inputProps.step = "any";
+	} else if (type === "date" || type === "datetime-local") {
+		if (min !== void 0) inputProps.min = String(min);
+		if (max !== void 0) inputProps.max = String(max);
+	}
+	return /* @__PURE__ */ jsx(Input, { ...inputProps });
 }
-function FilterChip({ config, operator, value, filterOptions, onOperatorChange, onValueChange, onRemove }) {
-	const Icon = config.icon;
-	const operatorLabel = getOperatorLabel(operator);
-	const options = filterOptions || config.options || [];
-	const valueLabel = formatFilterValue(value, options);
-	const hasMultipleOperators = config.operators.length > 1;
-	const isSelectType = config.type === "enum" || config.type === "relation" || config.type === "boolean";
+function FilterChip({ filter, clause, value, onClauseChange, onValueChange, onRemove }) {
+	const clauseLabel = getClauseLabel(clause);
+	const valueLabel = formatFilterValue(value, filter.options);
+	const hasMultipleClauses = filter.clauses.length > 1;
+	const isSetType = filter.type === "set";
+	const showValueInput = clauseRequiresValue(clause);
+	const inputType = getInputTypeForFilterType(filter.type);
 	return /* @__PURE__ */ jsxs(Badge, {
 		variant: "secondary",
 		className: "flex items-center gap-1 px-2 py-1 h-7 text-sm font-normal",
 		children: [
-			Icon && /* @__PURE__ */ jsx(Icon, { className: "h-3.5 w-3.5 text-muted-foreground" }),
 			/* @__PURE__ */ jsx("span", {
 				className: "text-muted-foreground",
-				children: config.label
+				children: filter.label || filter.field
 			}),
-			hasMultipleOperators ? /* @__PURE__ */ jsxs(Popover, { children: [/* @__PURE__ */ jsx(PopoverTrigger, {
+			hasMultipleClauses ? /* @__PURE__ */ jsxs(Popover, { children: [/* @__PURE__ */ jsx(PopoverTrigger, {
 				asChild: true,
 				children: /* @__PURE__ */ jsx("button", {
 					type: "button",
 					className: "px-1 hover:bg-muted rounded text-xs text-muted-foreground hover:text-foreground transition-colors",
-					children: operatorLabel
+					children: clauseLabel
 				})
 			}), /* @__PURE__ */ jsx(PopoverContent, {
-				className: "w-40 p-1",
+				className: "w-44 p-1",
 				align: "start",
 				children: /* @__PURE__ */ jsx("div", {
 					className: "flex flex-col gap-0.5",
-					children: config.operators.map((op) => /* @__PURE__ */ jsx("button", {
+					children: filter.clauses.map((c) => /* @__PURE__ */ jsx("button", {
 						type: "button",
-						onClick: () => onOperatorChange(op),
-						className: `text-left px-2 py-1.5 text-sm rounded hover:bg-muted transition-colors ${op === operator ? "bg-muted font-medium" : ""}`,
-						children: getOperatorLabel(op)
-					}, op))
+						onClick: () => onClauseChange(c),
+						className: `text-left px-2 py-1.5 text-sm rounded hover:bg-muted transition-colors ${c === clause ? "bg-muted font-medium" : ""}`,
+						children: getClauseLabel(c)
+					}, c))
 				})
 			})] }) : /* @__PURE__ */ jsx("span", {
 				className: "text-xs text-muted-foreground",
-				children: operatorLabel
+				children: clauseLabel
 			}),
-			/* @__PURE__ */ jsxs(Popover, { children: [/* @__PURE__ */ jsx(PopoverTrigger, {
+			showValueInput && /* @__PURE__ */ jsxs(Popover, { children: [/* @__PURE__ */ jsx(PopoverTrigger, {
 				asChild: true,
 				children: /* @__PURE__ */ jsx("button", {
 					type: "button",
@@ -2508,16 +2567,19 @@ function FilterChip({ config, operator, value, filterOptions, onOperatorChange, 
 			}), /* @__PURE__ */ jsx(PopoverContent, {
 				className: "w-56 p-2",
 				align: "start",
-				children: isSelectType && options.length > 0 ? /* @__PURE__ */ jsx(FilterValueSelect, {
-					options,
+				children: isSetType && filter.options.length > 0 ? /* @__PURE__ */ jsx(FilterValueSelect, {
+					options: filter.options,
 					value,
 					onSelect: onValueChange,
-					placeholder: config.placeholder
+					placeholder: filter.placeholder || `Select ${filter.label || filter.field}...`,
+					colors: filter.colors
 				}) : /* @__PURE__ */ jsx(FilterValueInput, {
-					value: String(value || ""),
+					value: String(value ?? ""),
 					onChange: onValueChange,
-					placeholder: config.placeholder,
-					type: config.type === "number" ? "number" : config.type === "date" ? "date" : "text"
+					placeholder: filter.placeholder ?? void 0,
+					type: inputType,
+					min: filter.min,
+					max: filter.max
 				})
 			})] }),
 			/* @__PURE__ */ jsxs(Button, {
@@ -2533,24 +2595,21 @@ function FilterChip({ config, operator, value, filterOptions, onOperatorChange, 
 		]
 	});
 }
-function AddFilterButton({ configs, filterOptions = {}, onAddFilter }) {
+function AddFilterButton({ filters, onAddFilter }) {
 	const [inputValues, setInputValues] = useState({});
 	const [open, setOpen] = useState(false);
-	const handleSelectValue = (field, type, value, operators) => {
-		const op = getDefaultOperator(type);
-		onAddFilter(field, operators.includes(op) ? op : operators[0], value);
+	const handleAddFilter = (filter, clause, value) => {
+		onAddFilter(filter.field, clause, value);
 		setOpen(false);
-		setInputValues((prev) => ({
-			...prev,
-			[field]: ""
-		}));
+		setInputValues({});
 	};
-	const handleInputKeyDown = (e, field, type, operators) => {
+	const handleInputKeyDown = (e, filter, clause) => {
 		if (e.key === "Enter") {
-			const value = inputValues[field]?.trim();
-			if (value) handleSelectValue(field, type, value, operators);
+			const value = inputValues[filter.field]?.trim();
+			if (value) handleAddFilter(filter, clause, value);
 		}
 	};
+	if (filters.length === 0) return null;
 	return /* @__PURE__ */ jsxs(DropdownMenu, {
 		open,
 		onOpenChange: setOpen,
@@ -2565,124 +2624,149 @@ function AddFilterButton({ configs, filterOptions = {}, onAddFilter }) {
 		}), /* @__PURE__ */ jsx(DropdownMenuContent, {
 			align: "start",
 			className: "w-48",
-			children: configs.map((config) => {
-				const Icon = config.icon;
-				const options = config.optionsKey && filterOptions[config.optionsKey] || config.options || [];
-				if (options.length > 0) return /* @__PURE__ */ jsxs(DropdownMenuSub, { children: [/* @__PURE__ */ jsxs(DropdownMenuSubTrigger, {
+			children: filters.map((filter) => {
+				const inputType = getInputTypeForFilterType(filter.type);
+				const hasMultipleClauses = filter.clauses.length > 1;
+				if (filter.type === "set" && filter.options.length > 0) return /* @__PURE__ */ jsxs(DropdownMenuSub, { children: [/* @__PURE__ */ jsx(DropdownMenuSubTrigger, {
 					className: "gap-2",
-					children: [Icon && /* @__PURE__ */ jsx(Icon, { className: "h-4 w-4" }), /* @__PURE__ */ jsx("span", { children: config.label })]
+					children: /* @__PURE__ */ jsx("span", { children: filter.label || filter.field })
 				}), /* @__PURE__ */ jsx(DropdownMenuSubContent, {
 					className: "p-0",
-					children: /* @__PURE__ */ jsxs(Command$1, { children: [/* @__PURE__ */ jsx(CommandInput, { placeholder: `Search ${config.label.toLowerCase()}...` }), /* @__PURE__ */ jsxs(CommandList, { children: [/* @__PURE__ */ jsx(CommandEmpty, { children: "No results found." }), /* @__PURE__ */ jsx(CommandGroup, { children: options.map((option) => {
-						const OptionIcon = option.icon;
-						return /* @__PURE__ */ jsxs(CommandItem, {
-							value: option.label,
-							onSelect: () => handleSelectValue(config.customParam || config.field, config.type, option.value, config.operators),
-							children: [OptionIcon && /* @__PURE__ */ jsx(OptionIcon, { className: "mr-2 h-4 w-4" }), /* @__PURE__ */ jsx("span", { children: option.label })]
-						}, String(option.value));
-					}) })] })] })
-				})] }, config.field);
-				return /* @__PURE__ */ jsxs(DropdownMenuSub, { children: [/* @__PURE__ */ jsxs(DropdownMenuSubTrigger, {
+					children: /* @__PURE__ */ jsxs(Command$1, { children: [/* @__PURE__ */ jsx(CommandInput, { placeholder: filter.placeholder || `Search ${(filter.label || filter.field).toLowerCase()}...` }), /* @__PURE__ */ jsxs(CommandList, { children: [/* @__PURE__ */ jsx(CommandEmpty, { children: "No results found." }), /* @__PURE__ */ jsx(CommandGroup, { children: filter.options.map((option) => /* @__PURE__ */ jsx(CommandItem, {
+						value: option.label,
+						onSelect: () => handleAddFilter(filter, "equals", option.value),
+						children: /* @__PURE__ */ jsx("span", { children: option.label })
+					}, String(option.value))) })] })] })
+				})] }, filter.field);
+				if (filter.type === "boolean") return /* @__PURE__ */ jsxs(DropdownMenuSub, { children: [/* @__PURE__ */ jsx(DropdownMenuSubTrigger, {
 					className: "gap-2",
-					children: [Icon && /* @__PURE__ */ jsx(Icon, { className: "h-4 w-4" }), /* @__PURE__ */ jsx("span", { children: config.label })]
+					children: /* @__PURE__ */ jsx("span", { children: filter.label || filter.field })
+				}), /* @__PURE__ */ jsx(DropdownMenuSubContent, {
+					className: "p-1 w-32",
+					children: /* @__PURE__ */ jsx(Command$1, { children: /* @__PURE__ */ jsx(CommandList, { children: /* @__PURE__ */ jsxs(CommandGroup, { children: [
+						/* @__PURE__ */ jsx(CommandItem, {
+							onSelect: () => handleAddFilter(filter, filter.defaultClause, true),
+							children: "Yes"
+						}),
+						/* @__PURE__ */ jsx(CommandItem, {
+							onSelect: () => handleAddFilter(filter, filter.defaultClause, false),
+							children: "No"
+						}),
+						filter.nullable && /* @__PURE__ */ jsx(CommandItem, {
+							onSelect: () => handleAddFilter(filter, filter.defaultClause, null),
+							children: "Not set"
+						})
+					] }) }) })
+				})] }, filter.field);
+				if (hasMultipleClauses) return /* @__PURE__ */ jsxs(DropdownMenuSub, { children: [/* @__PURE__ */ jsx(DropdownMenuSubTrigger, {
+					className: "gap-2",
+					children: /* @__PURE__ */ jsx("span", { children: filter.label || filter.field })
+				}), /* @__PURE__ */ jsx(DropdownMenuSubContent, {
+					className: "p-1 w-44",
+					children: filter.clauses.map((clause) => /* @__PURE__ */ jsxs(DropdownMenuSub, { children: [/* @__PURE__ */ jsx(DropdownMenuSubTrigger, {
+						className: "text-sm",
+						children: /* @__PURE__ */ jsx("span", { children: getClauseLabel(clause) })
+					}), /* @__PURE__ */ jsxs(DropdownMenuSubContent, {
+						className: "p-2 w-48",
+						children: [/* @__PURE__ */ jsx(Input, {
+							type: inputType,
+							placeholder: filter.placeholder || `Enter value...`,
+							value: inputValues[`${filter.field}-${clause}`] || "",
+							onChange: (e) => setInputValues((prev) => ({
+								...prev,
+								[`${filter.field}-${clause}`]: e.target.value
+							})),
+							onKeyDown: (e) => {
+								if (e.key === "Enter") {
+									const value = inputValues[`${filter.field}-${clause}`]?.trim();
+									if (value) handleAddFilter(filter, clause, value);
+								}
+							},
+							min: filter.min,
+							max: filter.max,
+							autoFocus: true,
+							className: "h-8"
+						}), /* @__PURE__ */ jsx("p", {
+							className: "text-xs text-muted-foreground mt-1",
+							children: "Press Enter to add"
+						})]
+					})] }, clause))
+				})] }, filter.field);
+				return /* @__PURE__ */ jsxs(DropdownMenuSub, { children: [/* @__PURE__ */ jsx(DropdownMenuSubTrigger, {
+					className: "gap-2",
+					children: /* @__PURE__ */ jsx("span", { children: filter.label || filter.field })
 				}), /* @__PURE__ */ jsxs(DropdownMenuSubContent, {
 					className: "p-2 w-48",
 					children: [/* @__PURE__ */ jsx(Input, {
-						type: config.type === "number" ? "number" : "text",
-						placeholder: config.placeholder || `Enter ${config.label.toLowerCase()}...`,
-						value: inputValues[config.field] || "",
+						type: inputType,
+						placeholder: filter.placeholder || `Enter ${(filter.label || filter.field).toLowerCase()}...`,
+						value: inputValues[filter.field] || "",
 						onChange: (e) => setInputValues((prev) => ({
 							...prev,
-							[config.field]: e.target.value
+							[filter.field]: e.target.value
 						})),
-						onKeyDown: (e) => handleInputKeyDown(e, config.customParam || config.field, config.type, config.operators),
+						onKeyDown: (e) => handleInputKeyDown(e, filter, filter.defaultClause),
+						min: filter.min,
+						max: filter.max,
 						autoFocus: true,
 						className: "h-8"
 					}), /* @__PURE__ */ jsx("p", {
 						className: "text-xs text-muted-foreground mt-1",
 						children: "Press Enter to add filter"
 					})]
-				})] }, config.field);
+				})] }, filter.field);
 			})
 		})]
 	});
 }
-function FilterModeToggle({ mode, onChange }) {
-	const handleToggle = () => {
-		onChange(mode === "all" ? "any" : "all");
-	};
-	return /* @__PURE__ */ jsx(Button, {
-		variant: "ghost",
-		size: "sm",
-		className: "h-7 text-xs text-muted-foreground hover:text-foreground",
-		onClick: handleToggle,
-		children: mode === "all" ? "Match all filters" : "Match any filter"
-	});
-}
-function FilterBar({ configs, filters, customFilters = {}, filterOptions = {}, filterMode, onFilterChange, onFilterRemove, onCustomFilterChange, onClearFilters, onFilterModeChange, className = "" }) {
-	const activeFilters = [];
-	configs.forEach((config) => {
-		if (config.customParam && customFilters[config.customParam] !== void 0) {
-			const value = customFilters[config.customParam];
-			if (value !== "" && value !== null && value !== "all" && value !== "not_trashed") activeFilters.push({
-				config,
-				operator: "==",
-				value,
-				isCustom: true
-			});
-		}
-	});
-	filters.forEach((filter) => {
-		const config = configs.find((c) => c.field === filter.field || c.customParam === filter.field);
-		if (config && !config.customParam) activeFilters.push({
-			config,
-			operator: filter.op,
-			value: filter.value,
-			isCustom: false
+function FilterBar({ filters, activeFilters, onFilterChange, onFilterRemove, onClearFilters, className = "" }) {
+	const activeFiltersWithDefs = [];
+	activeFilters.forEach((af) => {
+		const definition = filters.find((f) => f.field === af.field);
+		if (definition) activeFiltersWithDefs.push({
+			definition,
+			clause: flopOpToClause(af.op),
+			value: af.value,
+			flopOp: af.op
 		});
 	});
-	const hasActiveFilters = activeFilters.length > 0;
-	const handleFilterChange = (config, isCustom, op, value) => {
-		if (isCustom && config.customParam && onCustomFilterChange) onCustomFilterChange(config.customParam, value);
-		else onFilterChange(config.field, op, value);
-	};
-	const handleFilterRemove = (config, isCustom, op) => {
-		if (isCustom && config.customParam && onCustomFilterChange) onCustomFilterChange(config.customParam, void 0);
-		else onFilterRemove(config.field, op);
-	};
-	const availableConfigs = configs.filter((config) => {
-		if (config.customParam) return !activeFilters.some((af) => af.config.field === config.field);
+	const hasActiveFilters = activeFiltersWithDefs.length > 0;
+	const availableFilters = filters.filter((f) => {
+		if (f.type === "set") return !activeFiltersWithDefs.some((af) => af.definition.field === f.field);
 		return true;
 	});
+	const handleClauseChange = (filter, newClause) => {
+		const newOp = clauseToFlopOp(newClause);
+		const newValue = transformFilterValue(newClause, filter.value);
+		onFilterRemove(filter.definition.field, filter.flopOp);
+		onFilterChange(filter.definition.field, newOp, newValue);
+	};
+	const handleValueChange = (filter, newValue) => {
+		const transformedValue = transformFilterValue(filter.clause, newValue);
+		onFilterChange(filter.definition.field, filter.flopOp, transformedValue);
+	};
+	const handleRemove = (filter) => {
+		onFilterRemove(filter.definition.field, filter.flopOp);
+	};
+	const handleAddFilter = (field, clause, value) => {
+		onFilterChange(field, clauseToFlopOp(clause), transformFilterValue(clause, value));
+	};
 	return /* @__PURE__ */ jsxs("div", {
 		className: `flex flex-wrap items-center gap-2 ${className}`,
 		role: "group",
 		"aria-label": "Active filters",
 		children: [
-			activeFilters.map((af, index$7) => {
-				const options = af.config.optionsKey && filterOptions[af.config.optionsKey] || af.config.options;
-				return /* @__PURE__ */ jsx(FilterChip, {
-					config: af.config,
-					operator: af.operator,
-					value: af.value,
-					filterOptions: options,
-					onOperatorChange: (op) => handleFilterChange(af.config, af.isCustom, op, af.value),
-					onValueChange: (value) => handleFilterChange(af.config, af.isCustom, af.operator, value),
-					onRemove: () => handleFilterRemove(af.config, af.isCustom, af.operator)
-				}, `${af.config.field}-${af.operator}-${index$7}`);
-			}),
-			availableConfigs.length > 0 && /* @__PURE__ */ jsx(AddFilterButton, {
-				configs: availableConfigs,
-				filterOptions,
-				onAddFilter: (field, op, value) => {
-					const config = configs.find((c) => c.field === field || c.customParam === field);
-					if (config?.customParam && onCustomFilterChange) onCustomFilterChange(config.customParam, value);
-					else onFilterChange(field, op, value);
-				}
-			}),
-			activeFilters.length > 1 && /* @__PURE__ */ jsx(FilterModeToggle, {
-				mode: filterMode,
-				onChange: onFilterModeChange
+			activeFiltersWithDefs.map((af, index$7) => /* @__PURE__ */ jsx(FilterChip, {
+				filter: af.definition,
+				clause: af.clause,
+				value: af.value,
+				onClauseChange: (clause) => handleClauseChange(af, clause),
+				onValueChange: (value) => handleValueChange(af, value),
+				onRemove: () => handleRemove(af)
+			}, `${af.definition.field}-${af.flopOp}-${index$7}`)),
+			availableFilters.length > 0 && /* @__PURE__ */ jsx(AddFilterButton, {
+				filters: availableFilters,
+				onAddFilter: handleAddFilter
 			}),
 			hasActiveFilters && /* @__PURE__ */ jsxs(Button, {
 				variant: "ghost",
@@ -2694,130 +2778,7 @@ function FilterBar({ configs, filters, customFilters = {}, filterOptions = {}, f
 		]
 	});
 }
-const DataTableContext = React$1.createContext({});
-function useDataTableContext() {
-	return React$1.useContext(DataTableContext);
-}
-function DataTable({ columns, data, meta, onSortChange, getSortDirection, emptyState, className, rowClassName, onRowClick, footer }) {
-	const table = useReactTable({
-		data,
-		columns,
-		getCoreRowModel: getCoreRowModel(),
-		manualPagination: true,
-		manualSorting: true,
-		pageCount: meta?.totalPages ?? -1
-	});
-	const contextValue = React$1.useMemo(() => ({
-		onSortChange,
-		getSortDirection
-	}), [onSortChange, getSortDirection]);
-	const getRowClassName = (row) => {
-		if (typeof rowClassName === "function") return rowClassName(row);
-		return rowClassName ?? "";
-	};
-	return /* @__PURE__ */ jsx(DataTableContext.Provider, {
-		value: contextValue,
-		children: /* @__PURE__ */ jsx("div", {
-			className: cn("overflow-hidden", className),
-			children: /* @__PURE__ */ jsxs("table", {
-				className: "w-full text-sm",
-				children: [
-					/* @__PURE__ */ jsx("thead", { children: table.getHeaderGroups().map((headerGroup) => /* @__PURE__ */ jsx("tr", {
-						className: "border-b border-border",
-						children: headerGroup.headers.map((header) => /* @__PURE__ */ jsx("th", {
-							className: "h-10 px-4 text-left align-middle text-xs font-medium uppercase tracking-wider text-muted-foreground",
-							children: header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())
-						}, header.id))
-					}, headerGroup.id)) }),
-					/* @__PURE__ */ jsx("tbody", { children: table.getRowModel().rows?.length ? table.getRowModel().rows.map((row, index$7) => /* @__PURE__ */ jsx("tr", {
-						"data-state": row.getIsSelected() && "selected",
-						className: cn("transition-colors", "hover:bg-accent/50", "data-[state=selected]:bg-accent", index$7 !== table.getRowModel().rows.length - 1 && "border-b border-border", onRowClick && "cursor-pointer", getRowClassName(row)),
-						onClick: onRowClick ? () => onRowClick(row) : void 0,
-						children: row.getVisibleCells().map((cell) => /* @__PURE__ */ jsx("td", {
-							className: "px-4 py-3 align-middle text-foreground",
-							children: flexRender(cell.column.columnDef.cell, cell.getContext())
-						}, cell.id))
-					}, row.id)) : /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsx("td", {
-						colSpan: columns.length,
-						className: "px-4 py-12 text-center",
-						children: /* @__PURE__ */ jsxs("div", {
-							className: "flex flex-col items-center gap-2",
-							children: [/* @__PURE__ */ jsx(EmptyIcon, { className: "h-8 w-8 text-muted-foreground/50" }), /* @__PURE__ */ jsx("p", {
-								className: "text-sm text-muted-foreground",
-								children: emptyState ?? "No results found."
-							})]
-						})
-					}) }) }),
-					footer && /* @__PURE__ */ jsx("tfoot", {
-						className: "border-t border-border bg-muted/30",
-						children: footer(table)
-					})
-				]
-			})
-		})
-	});
-}
-function EmptyIcon({ className }) {
-	return /* @__PURE__ */ jsx("svg", {
-		className,
-		fill: "none",
-		viewBox: "0 0 24 24",
-		strokeWidth: 1.5,
-		stroke: "currentColor",
-		children: /* @__PURE__ */ jsx("path", {
-			strokeLinecap: "round",
-			strokeLinejoin: "round",
-			d: "M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
-		})
-	});
-}
-function SortableColumnHeader({ field, children, className = "" }) {
-	const { onSortChange, getSortDirection } = useDataTableContext();
-	const direction = getSortDirection?.(field) ?? null;
-	const isActive = direction !== null;
-	const handleClick = () => {
-		if (!onSortChange) return;
-		let newDirection;
-		if (!isActive) newDirection = "asc";
-		else if (direction === "asc") newDirection = "desc";
-		else newDirection = null;
-		onSortChange(field, newDirection);
-	};
-	if (!onSortChange) return /* @__PURE__ */ jsx("span", {
-		className: "text-xs font-medium uppercase tracking-wider",
-		children
-	});
-	return /* @__PURE__ */ jsxs("button", {
-		type: "button",
-		onClick: handleClick,
-		className: cn("inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider transition-colors", "hover:text-foreground focus:outline-none focus-visible:text-foreground", isActive ? "text-foreground" : "text-muted-foreground", className),
-		"aria-sort": direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none",
-		children: [/* @__PURE__ */ jsx("span", { children }), direction === "asc" ? /* @__PURE__ */ jsx(ArrowUp, { className: "h-3.5 w-3.5" }) : direction === "desc" ? /* @__PURE__ */ jsx(ArrowDown, { className: "h-3.5 w-3.5" }) : /* @__PURE__ */ jsx(ArrowUpDown, { className: "h-3.5 w-3.5 opacity-40" })]
-	});
-}
-function PageHeader({ title, description, action }) {
-	return /* @__PURE__ */ jsxs("div", {
-		className: "mb-6 flex items-center justify-between",
-		children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h1", {
-			className: "text-xl font-semibold text-foreground",
-			children: title
-		}), description && /* @__PURE__ */ jsx("p", {
-			className: "mt-1 text-sm text-muted-foreground",
-			children: description
-		})] }), action && /* @__PURE__ */ jsx(ClientModalLink, {
-			href: action.href,
-			loadingComponent: action.loadingComponent,
-			modalConfig: action.modalConfig,
-			prefetch: action.prefetch,
-			cacheFor: action.cacheFor,
-			children: /* @__PURE__ */ jsxs(Button, {
-				size: "sm",
-				className: "gap-1.5",
-				children: [action.icon ?? /* @__PURE__ */ jsx(Plus, { className: "h-4 w-4" }), action.label]
-			})
-		})]
-	});
-}
+React$1.createContext({});
 function SearchInput({ value, onChange, onSubmit, placeholder = "Search...", className = "max-w-sm" }) {
 	const input = /* @__PURE__ */ jsxs("div", {
 		className: `relative ${className}`,
@@ -2834,6 +2795,500 @@ function SearchInput({ value, onChange, onSubmit, placeholder = "Search...", cla
 		children: input
 	});
 	return input;
+}
+function Table({ resource, baseUrl, renderRow, renderCell, renderAction, rowClassName, onRowClick, preserveQuery = {}, header, footer, className }) {
+	const [search, setSearch] = useState(resource.state.search || "");
+	const [selectedIds, setSelectedIds] = useState(/* @__PURE__ */ new Set());
+	const [selectionMode, setSelectionMode] = useState("explicit");
+	const buildQuery = useCallback((overrides = {}) => {
+		const query = { ...preserveQuery };
+		if (resource.state.page > 1 || overrides.page) query.page = overrides.page ?? resource.state.page;
+		if (overrides.per_page) query.per_page = overrides.per_page;
+		const searchValue = overrides.search !== void 0 ? overrides.search : search;
+		if (searchValue) query.search = searchValue;
+		if (resource.state.sort || overrides.sort) {
+			const sort = overrides.sort ?? resource.state.sort;
+			if (sort) {
+				query.order_by = sort.field;
+				query.order_direction = sort.direction;
+			}
+		}
+		const filters = overrides.filters ?? resource.state.filters;
+		if (filters?.length > 0) filters.forEach((f, i) => {
+			query[`filters[${i}][field]`] = f.field;
+			query[`filters[${i}][op]`] = f.op;
+			query[`filters[${i}][value]`] = f.value;
+		});
+		Object.keys(query).forEach((key) => {
+			if (query[key] === void 0 || query[key] === null || query[key] === "") delete query[key];
+		});
+		return query;
+	}, [
+		resource.state,
+		search,
+		preserveQuery
+	]);
+	const navigate = useCallback((query) => {
+		router$1.visit(baseUrl, {
+			data: query,
+			preserveState: true,
+			preserveScroll: true
+		});
+	}, [baseUrl]);
+	const handleSearch = useCallback((e) => {
+		e.preventDefault();
+		navigate(buildQuery({
+			search,
+			page: 1
+		}));
+	}, [
+		navigate,
+		buildQuery,
+		search
+	]);
+	const handleSearchChange = useCallback((e) => {
+		setSearch(e.target.value);
+	}, []);
+	const handleSort = useCallback((field) => {
+		const currentSort = resource.state.sort;
+		let newDirection = "asc";
+		if (currentSort?.field === field) newDirection = currentSort.direction === "asc" ? "desc" : "asc";
+		navigate(buildQuery({
+			sort: {
+				field,
+				direction: newDirection
+			},
+			page: 1
+		}));
+	}, [
+		resource.state.sort,
+		navigate,
+		buildQuery
+	]);
+	const handlePageChange = useCallback((page) => {
+		navigate(buildQuery({ page }));
+	}, [navigate, buildQuery]);
+	const handlePerPageChange = useCallback((perPage) => {
+		navigate(buildQuery({
+			per_page: perPage,
+			page: 1
+		}));
+	}, [navigate, buildQuery]);
+	const handleFilterChange = useCallback((field, op, value) => {
+		const currentFilters = [...resource.state.filters || []];
+		const existingIndex = currentFilters.findIndex((f) => f.field === field && f.op === op);
+		if (existingIndex >= 0) currentFilters[existingIndex] = {
+			field,
+			op,
+			value
+		};
+		else currentFilters.push({
+			field,
+			op,
+			value
+		});
+		navigate(buildQuery({
+			filters: currentFilters,
+			page: 1
+		}));
+	}, [
+		resource.state.filters,
+		navigate,
+		buildQuery
+	]);
+	const handleFilterRemove = useCallback((field, op) => {
+		navigate(buildQuery({
+			filters: [...resource.state.filters || []].filter((f) => {
+				if (op) return !(f.field === field && f.op === op);
+				return f.field !== field;
+			}),
+			page: 1
+		}));
+	}, [
+		resource.state.filters,
+		navigate,
+		buildQuery
+	]);
+	const handleClearFilters = useCallback(() => {
+		navigate(buildQuery({
+			filters: [],
+			page: 1
+		}));
+	}, [navigate, buildQuery]);
+	const handleSelectRow = useCallback((id) => {
+		setSelectedIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
+		setSelectionMode("explicit");
+	}, []);
+	const handleSelectAll = useCallback(() => {
+		if (selectionMode === "all") {
+			setSelectedIds(/* @__PURE__ */ new Set());
+			setSelectionMode("explicit");
+		} else {
+			setSelectionMode("all");
+			setSelectedIds(/* @__PURE__ */ new Set());
+		}
+	}, [selectionMode]);
+	const getSelection = useCallback(() => {
+		return {
+			mode: selectionMode,
+			ids: Array.from(selectedIds)
+		};
+	}, [selectionMode, selectedIds]);
+	const selectedCount = useMemo(() => {
+		if (selectionMode === "all") return (resource.meta.totalCount ?? resource.data.length) - selectedIds.size;
+		return selectedIds.size;
+	}, [
+		selectionMode,
+		selectedIds,
+		resource.meta.totalCount,
+		resource.data.length
+	]);
+	const handleAction = useCallback(async (action, row) => {
+		if (!resource.token) return;
+		if (action.confirmation) {
+			if (!window.confirm(`${action.confirmation.title}\n\n${action.confirmation.message}`)) return;
+		}
+		const result = await (await fetch("/nb-flop/action", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"X-CSRF-Token": getCSRFToken()
+			},
+			body: JSON.stringify({
+				token: resource.token,
+				action: action.name,
+				id: row.id
+			})
+		})).json();
+		if (result.success) if (result.redirect) router$1.visit(result.redirect);
+		else router$1.reload();
+		else alert(result.message || "Action failed");
+	}, [resource.token]);
+	const handleBulkAction = useCallback(async (action) => {
+		if (!resource.token || selectedCount === 0) return;
+		if (action.confirmation) {
+			const message = action.confirmation.message.replace("{count}", String(selectedCount));
+			if (!window.confirm(`${action.confirmation.title}\n\n${message}`)) return;
+		}
+		const result = await (await fetch("/nb-flop/bulk-action", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"X-CSRF-Token": getCSRFToken()
+			},
+			body: JSON.stringify({
+				token: resource.token,
+				action: action.name,
+				selection: getSelection(),
+				filters: resource.state.filters
+			})
+		})).json();
+		if (result.success) {
+			setSelectedIds(/* @__PURE__ */ new Set());
+			setSelectionMode("explicit");
+			router$1.reload();
+		} else alert(result.message || "Bulk action failed");
+	}, [
+		resource.token,
+		selectedCount,
+		getSelection,
+		resource.state.filters
+	]);
+	const visibleColumns = useMemo(() => resource.columns.filter((col) => col.visible), [resource.columns]);
+	const getRowClassName = (row) => {
+		if (typeof rowClassName === "function") return rowClassName(row);
+		return rowClassName ?? "";
+	};
+	const isRowSelected = (row) => {
+		const id = row.id;
+		if (selectionMode === "all") return !selectedIds.has(id);
+		if (selectionMode === "all_except") return !selectedIds.has(id);
+		return selectedIds.has(id);
+	};
+	const defaultRenderCell = (column, value, row) => {
+		if (renderCell) {
+			const custom = renderCell(column, value, row);
+			if (custom !== void 0) return custom;
+		}
+		switch (column.type) {
+			case "image": return /* @__PURE__ */ jsx("img", {
+				src: value || column.fallback || "",
+				alt: "",
+				className: cn(column.rounded && "rounded-full", "object-cover"),
+				style: {
+					width: column.width || 40,
+					height: column.height || 40
+				}
+			});
+			case "badge": return /* @__PURE__ */ jsx("span", {
+				className: cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", getVariantClasses(column.colors?.[String(value).toLowerCase()] || "default")),
+				children: String(value ?? "")
+			});
+			case "boolean": return value ? /* @__PURE__ */ jsx("span", {
+				className: "text-green-600",
+				children: "Yes"
+			}) : /* @__PURE__ */ jsx("span", {
+				className: "text-muted-foreground",
+				children: "No"
+			});
+			case "numeric":
+				const num = Number(value) || 0;
+				let formatted = column.decimals !== null ? num.toFixed(column.decimals) : String(num);
+				if (column.thousandsSeparator) formatted = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, column.thousandsSeparator);
+				return /* @__PURE__ */ jsxs("span", { children: [
+					column.prefix,
+					formatted,
+					column.suffix
+				] });
+			case "date":
+			case "datetime":
+				if (!value) return null;
+				return /* @__PURE__ */ jsx("span", { children: new Date(value).toLocaleDateString(void 0, {
+					year: "numeric",
+					month: "short",
+					day: "numeric",
+					...column.type === "datetime" && {
+						hour: "2-digit",
+						minute: "2-digit"
+					}
+				}) });
+			case "action": return /* @__PURE__ */ jsx("div", {
+				className: "flex items-center justify-end gap-2",
+				children: resource.actions.map((action) => {
+					const rowActionState = row.actions?.[action.name];
+					if (rowActionState?.hidden) return null;
+					if (renderAction) return renderAction(action, row);
+					return /* @__PURE__ */ jsx("button", {
+						onClick: (e) => {
+							e.stopPropagation();
+							handleAction(action, row);
+						},
+						disabled: rowActionState?.disabled,
+						className: cn("inline-flex items-center gap-1 rounded px-2 py-1 text-xs", getActionClasses(action.variant), rowActionState?.disabled && "opacity-50 cursor-not-allowed"),
+						title: action.label ?? action.name,
+						children: action.label ?? action.name
+					}, action.name);
+				})
+			});
+			default: return /* @__PURE__ */ jsx("span", {
+				className: cn(column.truncate && "truncate block max-w-xs"),
+				children: String(value ?? "")
+			});
+		}
+	};
+	const hasFilters = resource.filters && resource.filters.length > 0;
+	const showDefaultHeader = resource.searchable.length > 0 || resource.bulkActions.length > 0 || hasFilters;
+	return /* @__PURE__ */ jsxs("div", {
+		className: cn("space-y-4", className),
+		children: [
+			header,
+			!header && showDefaultHeader && /* @__PURE__ */ jsxs("div", {
+				className: "space-y-3",
+				children: [(resource.searchable.length > 0 || selectedCount > 0 && resource.bulkActions.length > 0) && /* @__PURE__ */ jsxs("div", {
+					className: "flex items-center justify-between gap-4",
+					children: [resource.searchable.length > 0 && /* @__PURE__ */ jsx("form", {
+						onSubmit: handleSearch,
+						className: "flex-1 max-w-sm",
+						children: /* @__PURE__ */ jsx(SearchInput, {
+							value: search,
+							onChange: handleSearchChange,
+							placeholder: resource.searchPlaceholder || "Search..."
+						})
+					}), selectedCount > 0 && resource.bulkActions.length > 0 && /* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-2",
+						children: [/* @__PURE__ */ jsxs("span", {
+							className: "text-sm text-muted-foreground",
+							children: [selectedCount, " selected"]
+						}), resource.bulkActions.map((action) => /* @__PURE__ */ jsx("button", {
+							onClick: () => handleBulkAction(action),
+							className: cn("inline-flex items-center gap-1 rounded px-3 py-1.5 text-sm", getActionClasses(action.variant)),
+							children: action.label ?? action.name
+						}, action.name))]
+					})]
+				}), hasFilters && /* @__PURE__ */ jsx(FilterBar, {
+					filters: resource.filters,
+					activeFilters: resource.state.filters || [],
+					onFilterChange: handleFilterChange,
+					onFilterRemove: handleFilterRemove,
+					onClearFilters: handleClearFilters
+				})]
+			}),
+			/* @__PURE__ */ jsxs("div", {
+				className: "rounded-lg border border-border bg-card overflow-hidden",
+				children: [/* @__PURE__ */ jsxs("table", {
+					className: "w-full text-sm",
+					children: [/* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", {
+						className: "border-b border-border",
+						children: [resource.bulkActions.length > 0 && /* @__PURE__ */ jsx("th", {
+							className: "w-10 px-4 py-3",
+							children: /* @__PURE__ */ jsx("input", {
+								type: "checkbox",
+								checked: selectionMode === "all",
+								onChange: handleSelectAll,
+								className: "rounded border-border"
+							})
+						}), visibleColumns.map((column) => /* @__PURE__ */ jsx("th", {
+							className: cn("px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground", column.alignment === "center" && "text-center", column.alignment === "right" && "text-right", column.headerClass),
+							children: column.sortable ? /* @__PURE__ */ jsxs("button", {
+								onClick: () => handleSort(column.key),
+								className: "inline-flex items-center gap-1 hover:text-foreground",
+								children: [column.label ?? column.key, /* @__PURE__ */ jsx(SortIcon, { direction: resource.state.sort?.field === column.key ? resource.state.sort.direction : null })]
+							}) : column.label ?? column.key
+						}, column.key))]
+					}) }), /* @__PURE__ */ jsx("tbody", { children: resource.data.length > 0 ? resource.data.map((row, index$7) => /* @__PURE__ */ jsxs("tr", {
+						className: cn("transition-colors hover:bg-accent/50", index$7 !== resource.data.length - 1 && "border-b border-border", onRowClick && "cursor-pointer", isRowSelected(row) && "bg-accent/30", getRowClassName(row)),
+						onClick: onRowClick ? () => onRowClick(row) : void 0,
+						children: [resource.bulkActions.length > 0 && /* @__PURE__ */ jsx("td", {
+							className: "px-4 py-3",
+							children: /* @__PURE__ */ jsx("input", {
+								type: "checkbox",
+								checked: isRowSelected(row),
+								onChange: () => handleSelectRow(row.id),
+								onClick: (e) => e.stopPropagation(),
+								className: "rounded border-border"
+							})
+						}), renderRow ? renderRow(row, visibleColumns) : visibleColumns.map((column) => /* @__PURE__ */ jsx("td", {
+							className: cn("px-4 py-3", column.alignment === "center" && "text-center", column.alignment === "right" && "text-right", column.cellClass),
+							children: defaultRenderCell(column, row[column.key], row)
+						}, column.key))]
+					}, row.id ?? index$7)) : /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsx("td", {
+						colSpan: visibleColumns.length + (resource.bulkActions.length > 0 ? 1 : 0),
+						className: "px-4 py-12 text-center",
+						children: resource.emptyState ? /* @__PURE__ */ jsxs("div", {
+							className: "flex flex-col items-center gap-2",
+							children: [
+								/* @__PURE__ */ jsx("p", {
+									className: "text-lg font-medium",
+									children: resource.emptyState.title
+								}),
+								resource.emptyState.message && /* @__PURE__ */ jsx("p", {
+									className: "text-sm text-muted-foreground",
+									children: resource.emptyState.message
+								}),
+								resource.emptyState.action && /* @__PURE__ */ jsx("a", {
+									href: resource.emptyState.action.href,
+									className: "mt-2 inline-flex items-center rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground",
+									children: resource.emptyState.action.label
+								})
+							]
+						}) : /* @__PURE__ */ jsx("p", {
+							className: "text-sm text-muted-foreground",
+							children: "No results found."
+						})
+					}) }) })]
+				}), resource.meta.totalPages != null && resource.meta.totalPages > 1 && /* @__PURE__ */ jsxs("div", {
+					className: "border-t border-border px-4 py-3 flex items-center justify-between",
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-2",
+						children: [/* @__PURE__ */ jsxs("span", {
+							className: "text-sm text-muted-foreground",
+							children: [resource.meta.totalCount, " total"]
+						}), /* @__PURE__ */ jsx("select", {
+							value: resource.state.perPage,
+							onChange: (e) => handlePerPageChange(Number(e.target.value)),
+							className: "h-8 rounded border border-border bg-background px-2 text-sm",
+							children: resource.perPageOptions.map((opt) => /* @__PURE__ */ jsxs("option", {
+								value: opt,
+								children: [opt, " per page"]
+							}, opt))
+						})]
+					}), /* @__PURE__ */ jsx(Pagination, {
+						meta: {
+							currentPage: resource.meta.currentPage,
+							totalPages: resource.meta.totalPages,
+							previousPage: resource.meta.previousPage,
+							nextPage: resource.meta.nextPage,
+							hasPreviousPage: resource.meta.hasPreviousPage,
+							hasNextPage: resource.meta.hasNextPage,
+							pageSize: resource.meta.pageSize,
+							totalCount: resource.meta.totalCount,
+							currentOffset: null,
+							previousOffset: null,
+							nextOffset: null,
+							startCursor: null,
+							endCursor: null,
+							flop: resource.meta.flop ?? {
+								filters: [],
+								orderBy: null,
+								orderDirections: null,
+								page: null,
+								pageSize: null
+							}
+						},
+						onPageChange: handlePageChange,
+						className: "flex items-center gap-1"
+					})]
+				})]
+			}),
+			footer
+		]
+	});
+}
+function getCSRFToken() {
+	return document.querySelector("meta[name=\"csrf-token\"]")?.getAttribute("content") || "";
+}
+function getVariantClasses(variant) {
+	const variants = {
+		default: "bg-muted text-muted-foreground",
+		primary: "bg-primary/10 text-primary",
+		success: "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400",
+		warning: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",
+		danger: "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+	};
+	return variants[variant] || variants.default;
+}
+function getActionClasses(variant) {
+	const variants = {
+		default: "bg-muted text-muted-foreground hover:bg-muted/80",
+		primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+		success: "bg-green-600 text-white hover:bg-green-700",
+		warning: "bg-yellow-600 text-white hover:bg-yellow-700",
+		danger: "bg-red-600 text-white hover:bg-red-700"
+	};
+	return variants[variant] || variants.default;
+}
+function SortIcon({ direction }) {
+	if (direction === "asc") return /* @__PURE__ */ jsx("svg", {
+		className: "h-4 w-4",
+		fill: "none",
+		viewBox: "0 0 24 24",
+		stroke: "currentColor",
+		children: /* @__PURE__ */ jsx("path", {
+			strokeLinecap: "round",
+			strokeLinejoin: "round",
+			strokeWidth: 2,
+			d: "M5 15l7-7 7 7"
+		})
+	});
+	if (direction === "desc") return /* @__PURE__ */ jsx("svg", {
+		className: "h-4 w-4",
+		fill: "none",
+		viewBox: "0 0 24 24",
+		stroke: "currentColor",
+		children: /* @__PURE__ */ jsx("path", {
+			strokeLinecap: "round",
+			strokeLinejoin: "round",
+			strokeWidth: 2,
+			d: "M19 9l-7 7-7-7"
+		})
+	});
+	return /* @__PURE__ */ jsx("svg", {
+		className: "h-4 w-4 opacity-30",
+		fill: "none",
+		viewBox: "0 0 24 24",
+		stroke: "currentColor",
+		children: /* @__PURE__ */ jsx("path", {
+			strokeLinecap: "round",
+			strokeLinejoin: "round",
+			strokeWidth: 2,
+			d: "M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+		})
+	});
 }
 function ContactFormSkeleton() {
 	return /* @__PURE__ */ jsxs("div", {
@@ -2867,301 +3322,173 @@ function ContactFormSkeleton() {
 		})]
 	});
 }
-const contactsFilterConfig = [
-	{
-		field: "organization_id",
-		label: "Organization",
-		type: "relation",
-		operators: ["==", "!="],
-		icon: Building2,
-		optionsKey: "organizations"
-	},
-	{
-		field: "trashed",
-		label: "Status",
-		type: "enum",
-		operators: ["=="],
-		icon: Settings,
-		customParam: "trashed",
-		options: [
-			{
-				value: "not_trashed",
-				label: "Active"
-			},
-			{
-				value: "with",
-				label: "With Deleted"
-			},
-			{
-				value: "only",
-				label: "Only Deleted"
-			}
-		]
-	},
-	{
-		field: "first_name",
-		label: "First Name",
-		type: "string",
-		operators: [
-			"ilike",
-			"==",
-			"!="
-		],
-		icon: User,
-		placeholder: "Enter first name..."
-	},
-	{
-		field: "last_name",
-		label: "Last Name",
-		type: "string",
-		operators: [
-			"ilike",
-			"==",
-			"!="
-		],
-		icon: User,
-		placeholder: "Enter last name..."
-	},
-	{
-		field: "email",
-		label: "Email",
-		type: "string",
-		operators: ["ilike", "=="],
-		icon: Mail,
-		placeholder: "Enter email..."
-	},
-	{
-		field: "phone",
-		label: "Phone",
-		type: "string",
-		operators: ["ilike", "=="],
-		icon: Phone,
-		placeholder: "Enter phone..."
-	},
-	{
-		field: "city",
-		label: "City",
-		type: "string",
-		operators: ["ilike", "=="],
-		icon: MapPin,
-		placeholder: "Enter city..."
-	},
-	{
-		field: "country",
-		label: "Country",
-		type: "string",
-		operators: ["==", "!="],
-		icon: MapPin,
-		placeholder: "Enter country code..."
-	}
-];
-var columns_exports = /* @__PURE__ */ __export({ createColumns: () => createColumns$2 }, 1);
-function createColumns$2({ onDelete, onRestore }) {
-	return [
-		{
-			accessorKey: "name",
-			header: () => /* @__PURE__ */ jsx(SortableColumnHeader, {
-				field: "last_name",
-				children: "Name"
-			}),
-			cell: ({ row }) => {
-				const contact = row.original;
-				return /* @__PURE__ */ jsxs("div", {
-					className: "flex items-center gap-2",
-					children: [/* @__PURE__ */ jsx("span", {
-						className: "font-medium",
-						children: contact.name
-					}), contact.deletedAt && /* @__PURE__ */ jsx(Badge, {
-						variant: "destructive",
-						children: "Deleted"
-					})]
-				});
+function useTableRealtime({ topic, createEvent, updateEvent, deleteEvent }) {
+	const [pendingUpdates, setPendingUpdates] = useState([]);
+	const [highlightedIds, setHighlightedIds] = useState(/* @__PURE__ */ new Set());
+	useChannel(socket, topic, {
+		[createEvent]: ({ contact, organization, user }) => {
+			const record = contact || organization || user;
+			if (record) setPendingUpdates((prev) => [...prev, {
+				type: "created",
+				id: record.id,
+				timestamp: Date.now()
+			}]);
+		},
+		[updateEvent]: ({ contact, organization, user }) => {
+			const record = contact || organization || user;
+			if (record) {
+				setHighlightedIds((prev) => new Set([...prev, record.id]));
+				setTimeout(() => {
+					setHighlightedIds((prev) => {
+						const next = new Set(prev);
+						next.delete(record.id);
+						return next;
+					});
+				}, 3e3);
 			}
 		},
-		{
-			accessorKey: "organizationName",
-			header: "Organization",
-			cell: ({ row }) => row.original.organizationName || "-"
-		},
-		{
-			accessorKey: "city",
-			header: () => /* @__PURE__ */ jsx(SortableColumnHeader, {
-				field: "city",
-				children: "City"
-			}),
-			cell: ({ row }) => row.original.city || "-"
-		},
-		{
-			accessorKey: "phone",
-			header: "Phone",
-			cell: ({ row }) => row.original.phone || "-"
-		},
-		{
-			id: "actions",
-			header: () => /* @__PURE__ */ jsx("div", {
-				className: "text-right",
-				children: "Actions"
-			}),
-			cell: ({ row }) => {
-				const contact = row.original;
-				return /* @__PURE__ */ jsxs("div", {
-					className: "flex justify-end gap-2",
-					children: [/* @__PURE__ */ jsx(ClientModalLink, {
-						href: contacts.edit(contact.id),
-						children: /* @__PURE__ */ jsx(Button, {
-							variant: "ghost",
-							size: "sm",
-							children: "Edit"
-						})
-					}), contact.deletedAt ? /* @__PURE__ */ jsx(Button, {
-						variant: "ghost",
-						size: "sm",
-						onClick: () => onRestore(contact),
-						children: "Restore"
-					}) : /* @__PURE__ */ jsx(Button, {
-						variant: "ghost",
-						size: "sm",
-						className: "text-red-600 hover:text-red-700",
-						onClick: () => onDelete(contact),
-						children: "Delete"
-					})]
-				});
-			}
+		[deleteEvent]: ({ id }) => {
+			setPendingUpdates((prev) => [...prev, {
+				type: "deleted",
+				id,
+				timestamp: Date.now()
+			}]);
 		}
-	];
+	});
+	useEffect(() => {
+		const interval = setInterval(() => {
+			const cutoff = Date.now() - 6e4;
+			setPendingUpdates((prev) => prev.filter((u) => u.timestamp > cutoff));
+		}, 3e4);
+		return () => clearInterval(interval);
+	}, []);
+	const refresh = useCallback(() => {
+		router.reload({ only: [
+			"contacts",
+			"organizations",
+			"users"
+		] });
+		setPendingUpdates([]);
+	}, []);
+	const dismissUpdates = useCallback(() => {
+		setPendingUpdates([]);
+	}, []);
+	const hasNewRecords = pendingUpdates.some((u) => u.type === "created");
+	const hasDeletedRecords = pendingUpdates.some((u) => u.type === "deleted");
+	return {
+		hasPendingChanges: pendingUpdates.length > 0,
+		hasNewRecords,
+		hasDeletedRecords,
+		pendingCount: pendingUpdates.length,
+		highlightedIds,
+		refresh,
+		dismissUpdates,
+		isHighlighted: (id) => highlightedIds.has(id)
+	};
 }
 var Index_exports = /* @__PURE__ */ __export({ default: () => ContactsIndex }, 1);
 function ContactsIndex() {
 	const { props } = usePage();
 	const contacts$1 = props.contacts;
-	const { meta, filters } = props;
-	const filterOptions = props.filter_options || {};
-	const [search, setSearch] = useState(filters?.search || "");
-	const [filterMode, setFilterMode] = useState(props.filter_mode || "all");
-	const flop = useFlopParams(meta, { onParamsChange: (params) => {
-		const query = {
-			...flopToQueryParams(params),
-			search: search || void 0,
-			trashed: filters?.trashed || void 0,
-			filter_mode: filterMode !== "all" ? filterMode : void 0
-		};
-		router.visit(contacts.index({ query }), {
-			preserveState: true,
-			preserveScroll: true
-		});
-	} });
-	const handleSearch = (e) => {
-		e.preventDefault();
-		router.visit(contacts.index({ query: {
-			search: search || void 0,
-			trashed: filters?.trashed || void 0,
-			filter_mode: filterMode !== "all" ? filterMode : void 0
-		} }), { preserveState: true });
-	};
-	const handleSearchChange = (e) => {
-		const value = e.target.value;
-		setSearch(value);
-		if (!value && filters?.search) router.visit(contacts.index({ query: {
-			trashed: filters?.trashed || void 0,
-			filter_mode: filterMode !== "all" ? filterMode : void 0
-		} }), { preserveState: true });
-	};
-	const handleCustomFilterChange = (param, value) => {
-		const query = {
-			search: filters?.search,
-			trashed: filters?.trashed,
-			filter_mode: filterMode !== "all" ? filterMode : void 0
-		};
-		query[param] = value;
-		router.visit(contacts.index({ query }), { preserveState: true });
-	};
-	const handleFilterModeChange = (mode) => {
-		setFilterMode(mode);
-		router.visit(contacts.index({ query: {
-			...flopToQueryParams(flop.params),
-			search: filters?.search,
-			trashed: filters?.trashed,
-			filter_mode: mode !== "all" ? mode : void 0
-		} }), { preserveState: true });
-	};
-	const handleClearFilters = () => {
-		flop.clearFilters();
-		router.visit(contacts.index({ query: { search: filters?.search } }), { preserveState: true });
-	};
-	const handleDelete = (contact) => {
-		if (confirm(`Are you sure you want to delete ${contact.name}?`)) router.visit(contacts.delete(contact.id));
-	};
-	const handleRestore = (contact) => {
-		router.visit(contacts.restore(contact.id));
-	};
-	const columns = useMemo(() => createColumns$2({
-		onDelete: handleDelete,
-		onRestore: handleRestore
-	}), []);
+	const { hasPendingChanges, hasNewRecords, pendingCount, isHighlighted, refresh, dismissUpdates } = useTableRealtime({
+		topic: "crm:contacts",
+		createEvent: "contact_created",
+		updateEvent: "contact_updated",
+		deleteEvent: "contact_deleted"
+	});
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Head, { title: "Contacts" }), /* @__PURE__ */ jsx("div", {
 		className: "px-6 py-6",
 		children: /* @__PURE__ */ jsxs("div", {
 			className: "mx-auto max-w-5xl",
 			children: [
-				/* @__PURE__ */ jsx(PageHeader, {
-					title: "Contacts",
-					description: "Manage your contacts and their information.",
-					action: {
-						label: "New contact",
-						href: contacts.new(),
-						loadingComponent: ContactFormSkeleton,
-						modalConfig: {
-							slideover: true,
-							position: "right"
-						},
-						prefetch: true
+				/* @__PURE__ */ jsxs("div", {
+					className: "mb-6 flex items-center justify-between",
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h1", {
+						className: "text-2xl font-semibold text-foreground",
+						children: "Contacts"
+					}), /* @__PURE__ */ jsx("p", {
+						className: "mt-1 text-sm text-muted-foreground",
+						children: "Manage your contacts and their information."
+					})] }), /* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-3",
+						children: [/* @__PURE__ */ jsxs("span", {
+							className: "flex items-center gap-1.5 text-xs text-muted-foreground",
+							children: [/* @__PURE__ */ jsx(CircleDot, { className: "h-2 w-2 animate-pulse text-green-500" }), "Live"]
+						}), /* @__PURE__ */ jsx(ClientModalLink, {
+							href: contacts.new(),
+							loadingComponent: ContactFormSkeleton,
+							modalConfig: {
+								slideover: true,
+								position: "right"
+							},
+							prefetch: true,
+							children: /* @__PURE__ */ jsx("button", {
+								className: "inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90",
+								children: "New contact"
+							})
+						})]
+					})]
+				}),
+				hasPendingChanges && /* @__PURE__ */ jsxs("div", {
+					className: "mb-4 flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-3",
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-2 text-sm",
+						children: [/* @__PURE__ */ jsx(RefreshCw, { className: "h-4 w-4 text-primary" }), /* @__PURE__ */ jsx("span", {
+							className: "text-foreground",
+							children: hasNewRecords ? `${pendingCount} new update${pendingCount > 1 ? "s" : ""} available` : "Some records have changed"
+						})]
+					}), /* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-2",
+						children: [/* @__PURE__ */ jsx("button", {
+							onClick: refresh,
+							className: "rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90",
+							children: "Refresh"
+						}), /* @__PURE__ */ jsx("button", {
+							onClick: dismissUpdates,
+							className: "rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground",
+							children: /* @__PURE__ */ jsx(X, { className: "h-4 w-4" })
+						})]
+					})]
+				}),
+				/* @__PURE__ */ jsx(Table, {
+					resource: contacts$1,
+					baseUrl: "/contacts",
+					rowClassName: (row) => {
+						const classes = [];
+						if (row.deletedAt) classes.push("bg-muted/50 opacity-60");
+						if (isHighlighted(row.id)) classes.push("animate-pulse bg-primary/10 ring-1 ring-primary/20");
+						return classes.join(" ");
+					},
+					onRowClick: (row) => {
+						router$1.visit(contacts.edit(row.id));
+					},
+					renderCell: (column, value, row) => {
+						if (column.key === "name") return /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("div", {
+							className: "font-medium",
+							children: row.name
+						}), row.deletedAt && /* @__PURE__ */ jsx("span", {
+							className: "text-xs text-muted-foreground",
+							children: "(deleted)"
+						})] });
+						if (column.key === "organizationName") {
+							if (!row.organizationName) return null;
+							return /* @__PURE__ */ jsx("span", {
+								className: "text-muted-foreground",
+								children: row.organizationName
+							});
+						}
+						if (column.key === "city") {
+							const parts = [row.city, row.region].filter(Boolean);
+							return parts.length > 0 ? parts.join(", ") : null;
+						}
 					}
-				}),
-				/* @__PURE__ */ jsxs("div", {
-					className: "mb-4 space-y-3",
-					children: [/* @__PURE__ */ jsx(SearchInput, {
-						value: search,
-						onChange: handleSearchChange,
-						onSubmit: handleSearch,
-						placeholder: "Search contacts..."
-					}), /* @__PURE__ */ jsx(FilterBar, {
-						configs: contactsFilterConfig,
-						filters: flop.params.filters ?? [],
-						customFilters: filters,
-						filterOptions,
-						filterMode,
-						onFilterChange: (field, op, value) => flop.setFilter(field, op, value),
-						onFilterRemove: (field, op) => flop.removeFilter(field, op),
-						onCustomFilterChange: handleCustomFilterChange,
-						onClearFilters: handleClearFilters,
-						onFilterModeChange: handleFilterModeChange
-					})]
-				}),
-				/* @__PURE__ */ jsxs("div", {
-					className: "rounded-lg border border-border bg-card",
-					children: [/* @__PURE__ */ jsx(DataTable, {
-						columns,
-						data: contacts$1,
-						meta,
-						onSortChange: flop.setSort,
-						getSortDirection: flop.getSortDirection,
-						emptyState: "No contacts found.",
-						rowClassName: (row) => row.original.deletedAt ? "bg-muted/50 opacity-60" : ""
-					}), meta.totalPages && meta.totalPages > 1 && /* @__PURE__ */ jsx("div", {
-						className: "border-t border-border px-4 py-3",
-						children: /* @__PURE__ */ jsx(Pagination, {
-							meta,
-							onPageChange: flop.setPage,
-							className: "flex items-center justify-center gap-1"
-						})
-					})]
 				}),
 				/* @__PURE__ */ jsxs("div", {
 					className: "mt-3 text-xs text-muted-foreground",
 					children: [
-						meta.totalCount,
+						contacts$1.meta.totalCount,
 						" contact",
-						meta.totalCount !== 1 ? "s" : "",
+						contacts$1.meta.totalCount !== 1 ? "s" : "",
 						" total"
 					]
 				})
@@ -3171,16 +3498,28 @@ function ContactsIndex() {
 }
 var Dashboard_exports = /* @__PURE__ */ __export({ default: () => Dashboard }, 1);
 function Dashboard() {
-	const { props } = usePage();
-	const { user, stats } = props;
+	const { props: serverProps } = usePage();
+	const { props } = useChannelProps(socket, "crm:lobby", {
+		stats_updated: {
+			prop: "stats",
+			strategy: "reload"
+		},
+		activity_created: {
+			prop: "activities",
+			strategy: "prepend",
+			transform: (event) => event.activity
+		}
+	}, { initialProps: serverProps });
+	const onlineUsers = usePresence(socket, "crm:lobby").list();
+	const { user, stats, activities } = props;
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Head, { title: "Dashboard" }), /* @__PURE__ */ jsx("div", {
 		className: "px-6 py-6",
 		children: /* @__PURE__ */ jsxs("div", {
 			className: "mx-auto max-w-5xl",
 			children: [
 				/* @__PURE__ */ jsxs("div", {
-					className: "mb-8",
-					children: [/* @__PURE__ */ jsxs("h1", {
+					className: "mb-8 flex items-start justify-between",
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("h1", {
 						className: "text-xl font-semibold text-foreground",
 						children: [
 							"Good ",
@@ -3190,30 +3529,30 @@ function Dashboard() {
 					}), /* @__PURE__ */ jsx("p", {
 						className: "mt-1 text-sm text-muted-foreground",
 						children: "Here's what's happening with your CRM today."
-					})]
+					})] }), onlineUsers.length > 0 && /* @__PURE__ */ jsx(OnlineUsersIndicator, { users: onlineUsers })]
 				}),
 				/* @__PURE__ */ jsxs("div", {
 					className: "mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4",
 					children: [
-						/* @__PURE__ */ jsx(StatCard, {
+						/* @__PURE__ */ jsx(StatCard$1, {
 							title: "Contacts",
 							value: stats?.contacts ?? 0,
 							href: "/contacts",
 							icon: Users
 						}),
-						/* @__PURE__ */ jsx(StatCard, {
+						/* @__PURE__ */ jsx(StatCard$1, {
 							title: "Organizations",
 							value: stats?.organizations ?? 0,
 							href: "/organizations",
 							icon: Building2
 						}),
-						/* @__PURE__ */ jsx(StatCard, {
+						/* @__PURE__ */ jsx(StatCard$1, {
 							title: "Users",
 							value: stats?.users ?? 0,
 							href: "/users",
 							icon: User
 						}),
-						/* @__PURE__ */ jsx(StatCard, {
+						/* @__PURE__ */ jsx(StatCard$1, {
 							title: "Revenue",
 							value: "$0",
 							href: "/reports",
@@ -3233,14 +3572,20 @@ function Dashboard() {
 								children: [/* @__PURE__ */ jsx("h2", {
 									className: "text-sm font-medium text-foreground",
 									children: "Recent Activity"
-								}), /* @__PURE__ */ jsx(Link, {
-									href: "/reports",
-									className: "text-xs font-medium text-primary hover:text-primary/80 transition-colors",
-									children: "View all"
+								}), /* @__PURE__ */ jsxs("div", {
+									className: "flex items-center gap-3",
+									children: [/* @__PURE__ */ jsxs("span", {
+										className: "flex items-center gap-1.5 text-xs text-muted-foreground",
+										children: [/* @__PURE__ */ jsx(CircleDot, { className: "h-2 w-2 animate-pulse text-green-500" }), "Live"]
+									}), /* @__PURE__ */ jsx(Link, {
+										href: "/reports",
+										className: "text-xs font-medium text-primary hover:text-primary/80 transition-colors",
+										children: "View all"
+									})]
 								})]
 							}), /* @__PURE__ */ jsx("div", {
 								className: "p-5",
-								children: /* @__PURE__ */ jsx(EmptyState, {
+								children: activities && activities.length > 0 ? /* @__PURE__ */ jsx(ActivityFeed, { activities }) : /* @__PURE__ */ jsx(EmptyState$1, {
 									icon: Clock,
 									title: "No recent activity",
 									description: "Activity will appear here as you create and update records."
@@ -3290,7 +3635,30 @@ function getGreeting() {
 	if (hour < 18) return "afternoon";
 	return "evening";
 }
-function StatCard({ title, value, href, icon: Icon, isMonetary }) {
+function OnlineUsersIndicator({ users: users$1 }) {
+	const allUsers = users$1.flatMap((u) => u.metas);
+	const displayLimit = 3;
+	const displayUsers = allUsers.slice(0, displayLimit);
+	const remainingCount = allUsers.length - displayLimit;
+	return /* @__PURE__ */ jsxs("div", {
+		className: "flex items-center gap-2",
+		children: [/* @__PURE__ */ jsxs("div", {
+			className: "flex -space-x-2",
+			children: [displayUsers.map((user, i) => /* @__PURE__ */ jsxs("div", {
+				className: "relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-primary/10 text-xs font-medium text-primary",
+				title: user.name,
+				children: [user.name.split(" ").map((n) => n[0]).join("").toUpperCase(), /* @__PURE__ */ jsx("span", { className: "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-green-500" })]
+			}, i)), remainingCount > 0 && /* @__PURE__ */ jsxs("div", {
+				className: "flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-muted text-xs font-medium text-muted-foreground",
+				children: ["+", remainingCount]
+			})]
+		}), /* @__PURE__ */ jsxs("span", {
+			className: "text-xs text-muted-foreground",
+			children: [allUsers.length, " online"]
+		})]
+	});
+}
+function StatCard$1({ title, value, href, icon: Icon, isMonetary }) {
 	return /* @__PURE__ */ jsx(Link, {
 		href,
 		className: "group rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/20 hover:bg-accent/50",
@@ -3301,13 +3669,86 @@ function StatCard({ title, value, href, icon: Icon, isMonetary }) {
 				children: title
 			}), /* @__PURE__ */ jsx("p", {
 				className: "mt-2 text-2xl font-semibold tabular-nums text-foreground",
-				children: isMonetary ? value : value.toLocaleString()
+				children: isMonetary ? value : typeof value === "number" ? value.toLocaleString() : value
 			})] }), /* @__PURE__ */ jsx("div", {
 				className: "rounded-md bg-primary/5 p-2 transition-colors group-hover:bg-primary/10",
 				children: /* @__PURE__ */ jsx(Icon, { className: "h-4 w-4 text-primary" })
 			})]
 		})
 	});
+}
+function ActivityFeed({ activities }) {
+	return /* @__PURE__ */ jsx("div", {
+		className: "space-y-3",
+		children: activities.map((activity) => /* @__PURE__ */ jsx(ActivityItem, { activity }, activity.id))
+	});
+}
+function ActivityItem({ activity }) {
+	const ActionIcon = getActionIcon(activity.action);
+	return /* @__PURE__ */ jsxs("div", {
+		className: "flex items-start gap-3 rounded-md px-2 py-2 transition-colors hover:bg-accent/50",
+		children: [/* @__PURE__ */ jsx("div", {
+			className: `mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${getActionColor(activity.action)}`,
+			children: /* @__PURE__ */ jsx(ActionIcon, { className: "h-3.5 w-3.5" })
+		}), /* @__PURE__ */ jsxs("div", {
+			className: "min-w-0 flex-1",
+			children: [/* @__PURE__ */ jsxs("p", {
+				className: "text-sm text-foreground",
+				children: [
+					/* @__PURE__ */ jsx("span", {
+						className: "font-medium",
+						children: activity.userName || "System"
+					}),
+					" ",
+					getActionVerb(activity.action),
+					" ",
+					/* @__PURE__ */ jsx("span", {
+						className: "font-medium",
+						children: activity.resourceName
+					}),
+					/* @__PURE__ */ jsxs("span", {
+						className: "text-muted-foreground",
+						children: [
+							" ",
+							"(",
+							activity.resourceType,
+							")"
+						]
+					})
+				]
+			}), /* @__PURE__ */ jsx("p", {
+				className: "mt-0.5 text-xs text-muted-foreground",
+				children: formatDistanceToNow(new Date(activity.insertedAt), { addSuffix: true })
+			})]
+		})]
+	});
+}
+function getActionIcon(action) {
+	switch (action) {
+		case "created": return UserPlus;
+		case "updated": return Pencil;
+		case "deleted": return Trash2;
+		case "restored": return RotateCcw;
+		default: return Clock;
+	}
+}
+function getActionColor(action) {
+	switch (action) {
+		case "created": return "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400";
+		case "updated": return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
+		case "deleted": return "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400";
+		case "restored": return "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400";
+		default: return "bg-muted text-muted-foreground";
+	}
+}
+function getActionVerb(action) {
+	switch (action) {
+		case "created": return "created";
+		case "updated": return "updated";
+		case "deleted": return "deleted";
+		case "restored": return "restored";
+		default: return action;
+	}
 }
 function QuickAction({ href, icon: Icon, title, description }) {
 	return /* @__PURE__ */ jsxs(Link, {
@@ -3328,7 +3769,7 @@ function QuickAction({ href, icon: Icon, title, description }) {
 		})]
 	});
 }
-function EmptyState({ icon: Icon, title, description }) {
+function EmptyState$1({ icon: Icon, title, description }) {
 	return /* @__PURE__ */ jsxs("div", {
 		className: "flex flex-col items-center justify-center py-8 text-center",
 		children: [
@@ -3455,13 +3896,13 @@ function OrganizationsCreate({ onClose }) {
 			preserveScroll: true,
 			onSuccess: () => {
 				if (onClose) onClose();
-				router.visit(organizations.index());
+				router$1.visit(organizations.index());
 			}
 		});
 	};
 	const handleCancel = () => {
 		if (onClose) onClose();
-		else router.visit(organizations.index());
+		else router$1.visit(organizations.index());
 	};
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Head, { title: "Create Organization" }), /* @__PURE__ */ jsxs("div", {
 		className: "p-6",
@@ -3680,26 +4121,32 @@ function OrganizationsEdit({ onClose }) {
 			preserveScroll: true,
 			onSuccess: () => {
 				if (onClose) onClose();
-				router.visit(organizations.index());
+				router$1.visit(organizations.index());
 			}
 		});
 	};
 	const handleDelete = () => {
-		if (confirm(`Are you sure you want to delete ${organization.name}?`)) router.visit(organizations.delete(organization.id));
+		if (confirm(`Are you sure you want to delete ${organization.name}?`)) router$1.visit(organizations.delete(organization.id));
 	};
 	const handleRestore = () => {
-		router.visit(organizations.restore(organization.id));
+		router$1.visit(organizations.restore(organization.id));
 	};
 	const handleCancel = () => {
 		if (onClose) onClose();
-		else router.visit(organizations.index());
+		else router$1.visit(organizations.index());
 	};
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Head, { title: `Edit ${organization.name}` }), /* @__PURE__ */ jsxs("div", {
 		className: "p-6",
 		children: [
-			/* @__PURE__ */ jsxs("h2", {
-				className: "text-lg font-semibold mb-6",
-				children: ["Edit ", organization.name]
+			/* @__PURE__ */ jsxs("div", {
+				className: "mb-6 flex items-start justify-between gap-4",
+				children: [/* @__PURE__ */ jsxs("h2", {
+					className: "text-lg font-semibold",
+					children: ["Edit ", organization.name]
+				}), /* @__PURE__ */ jsx(ViewerIndicator, {
+					type: "organization",
+					id: organization.id
+				})]
 			}),
 			organization.deletedAt && /* @__PURE__ */ jsx(DeletedNotice, {
 				entityName: "organization",
@@ -3877,266 +4324,472 @@ function OrganizationsEdit({ onClose }) {
 		]
 	})] });
 }
-const organizationsFilterConfig = [
-	{
-		field: "trashed",
-		label: "Status",
-		type: "enum",
-		operators: ["=="],
-		icon: Settings,
-		customParam: "trashed",
-		options: [
-			{
-				value: "not_trashed",
-				label: "Active"
-			},
-			{
-				value: "with",
-				label: "With Deleted"
-			},
-			{
-				value: "only",
-				label: "Only Deleted"
-			}
-		]
-	},
-	{
-		field: "name",
-		label: "Name",
-		type: "string",
-		operators: [
-			"ilike",
-			"==",
-			"!="
-		],
-		icon: Building2,
-		placeholder: "Enter organization name..."
-	},
-	{
-		field: "email",
-		label: "Email",
-		type: "string",
-		operators: ["ilike", "=="],
-		icon: Mail,
-		placeholder: "Enter email..."
-	},
-	{
-		field: "city",
-		label: "City",
-		type: "string",
-		operators: ["ilike", "=="],
-		icon: MapPin,
-		placeholder: "Enter city..."
-	},
-	{
-		field: "country",
-		label: "Country",
-		type: "string",
-		operators: ["==", "!="],
-		icon: MapPin,
-		placeholder: "Enter country code..."
-	}
-];
-var columns_exports$1 = /* @__PURE__ */ __export({ createColumns: () => createColumns$1 }, 1);
-function createColumns$1({ onDelete, onRestore }) {
-	return [
-		{
-			accessorKey: "name",
-			header: () => /* @__PURE__ */ jsx(SortableColumnHeader, {
-				field: "name",
-				children: "Name"
-			}),
-			cell: ({ row }) => {
-				const organization = row.original;
-				return /* @__PURE__ */ jsxs("div", {
-					className: "flex items-center gap-2",
-					children: [/* @__PURE__ */ jsx("span", {
-						className: "font-medium",
-						children: organization.name
-					}), organization.deletedAt && /* @__PURE__ */ jsx(Badge, {
-						variant: "destructive",
-						children: "Deleted"
-					})]
-				});
-			}
-		},
-		{
-			accessorKey: "city",
-			header: () => /* @__PURE__ */ jsx(SortableColumnHeader, {
-				field: "city",
-				children: "City"
-			}),
-			cell: ({ row }) => row.original.city || "-"
-		},
-		{
-			accessorKey: "phone",
-			header: "Phone",
-			cell: ({ row }) => row.original.phone || "-"
-		},
-		{
-			id: "actions",
-			header: () => /* @__PURE__ */ jsx("div", {
-				className: "text-right",
-				children: "Actions"
-			}),
-			cell: ({ row }) => {
-				const organization = row.original;
-				return /* @__PURE__ */ jsxs("div", {
-					className: "flex justify-end gap-2",
-					children: [/* @__PURE__ */ jsx(ClientModalLink, {
-						href: organizations.edit(organization.id),
-						children: /* @__PURE__ */ jsx(Button, {
-							variant: "ghost",
-							size: "sm",
-							children: "Edit"
-						})
-					}), organization.deletedAt ? /* @__PURE__ */ jsx(Button, {
-						variant: "ghost",
-						size: "sm",
-						onClick: () => onRestore(organization),
-						children: "Restore"
-					}) : /* @__PURE__ */ jsx(Button, {
-						variant: "ghost",
-						size: "sm",
-						className: "text-red-600 hover:text-red-700",
-						onClick: () => onDelete(organization),
-						children: "Delete"
-					})]
-				});
-			}
-		}
-	];
+function OrganizationFormSkeleton() {
+	return /* @__PURE__ */ jsxs("div", {
+		className: "p-6",
+		children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-7 w-44 mb-6" }), /* @__PURE__ */ jsxs("div", {
+			className: "space-y-5",
+			children: [
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-12 mb-1.5" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-full" })] }),
+				/* @__PURE__ */ jsxs("div", {
+					className: "grid gap-5 sm:grid-cols-2",
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-12 mb-1.5" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-full" })] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-14 mb-1.5" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-full" })] })]
+				}),
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-16 mb-1.5" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-full" })] }),
+				/* @__PURE__ */ jsxs("div", {
+					className: "grid gap-5 sm:grid-cols-2",
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-10 mb-1.5" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-full" })] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-28 mb-1.5" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-full" })] })]
+				}),
+				/* @__PURE__ */ jsxs("div", {
+					className: "grid gap-5 sm:grid-cols-2",
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-16 mb-1.5" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-full" })] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-24 mb-1.5" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-full" })] })]
+				}),
+				/* @__PURE__ */ jsxs("div", {
+					className: "flex justify-end gap-3 border-t border-border pt-5",
+					children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-20" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-40" })]
+				})
+			]
+		})]
+	});
 }
 var Index_exports$1 = /* @__PURE__ */ __export({ default: () => OrganizationsIndex }, 1);
 function OrganizationsIndex() {
 	const { props } = usePage();
 	const organizations$1 = props.organizations;
-	const { meta, filters } = props;
-	const [search, setSearch] = useState(filters?.search || "");
-	const [filterMode, setFilterMode] = useState(props.filter_mode || "all");
-	const flop = useFlopParams(meta, { onParamsChange: (params) => {
-		const query = {
-			...flopToQueryParams(params),
-			search: search || void 0,
-			trashed: filters?.trashed || void 0,
-			filter_mode: filterMode !== "all" ? filterMode : void 0
-		};
-		router.visit(organizations.index({ query }), {
-			preserveState: true,
-			preserveScroll: true
-		});
-	} });
-	const handleSearch = (e) => {
-		e.preventDefault();
-		router.visit(organizations.index({ query: {
-			search: search || void 0,
-			trashed: filters?.trashed || void 0,
-			filter_mode: filterMode !== "all" ? filterMode : void 0
-		} }), { preserveState: true });
-	};
-	const handleSearchChange = (e) => {
-		const value = e.target.value;
-		setSearch(value);
-		if (!value && filters?.search) router.visit(organizations.index({ query: {
-			trashed: filters?.trashed || void 0,
-			filter_mode: filterMode !== "all" ? filterMode : void 0
-		} }), { preserveState: true });
-	};
-	const handleCustomFilterChange = (param, value) => {
-		const query = {
-			search: filters?.search,
-			trashed: filters?.trashed,
-			filter_mode: filterMode !== "all" ? filterMode : void 0
-		};
-		query[param] = value;
-		router.visit(organizations.index({ query }), { preserveState: true });
-	};
-	const handleFilterModeChange = (mode) => {
-		setFilterMode(mode);
-		router.visit(organizations.index({ query: {
-			...flopToQueryParams(flop.params),
-			search: filters?.search,
-			trashed: filters?.trashed,
-			filter_mode: mode !== "all" ? mode : void 0
-		} }), { preserveState: true });
-	};
-	const handleClearFilters = () => {
-		flop.clearFilters();
-		router.visit(organizations.index({ query: { search: filters?.search } }), { preserveState: true });
-	};
-	const handleDelete = (organization) => {
-		if (confirm(`Are you sure you want to delete ${organization.name}?`)) router.visit(organizations.delete(organization.id));
-	};
-	const handleRestore = (organization) => {
-		router.visit(organizations.restore(organization.id));
-	};
-	const columns = useMemo(() => createColumns$1({
-		onDelete: handleDelete,
-		onRestore: handleRestore
-	}), []);
+	const { hasPendingChanges, hasNewRecords, pendingCount, isHighlighted, refresh, dismissUpdates } = useTableRealtime({
+		topic: "crm:organizations",
+		createEvent: "organization_created",
+		updateEvent: "organization_updated",
+		deleteEvent: "organization_deleted"
+	});
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Head, { title: "Organizations" }), /* @__PURE__ */ jsx("div", {
 		className: "px-6 py-6",
 		children: /* @__PURE__ */ jsxs("div", {
 			className: "mx-auto max-w-5xl",
 			children: [
-				/* @__PURE__ */ jsx(PageHeader, {
-					title: "Organizations",
-					description: "Manage your organizations and their contacts.",
-					action: {
-						label: "New organization",
-						href: organizations.new()
+				/* @__PURE__ */ jsxs("div", {
+					className: "mb-6 flex items-center justify-between",
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h1", {
+						className: "text-2xl font-semibold text-foreground",
+						children: "Organizations"
+					}), /* @__PURE__ */ jsx("p", {
+						className: "mt-1 text-sm text-muted-foreground",
+						children: "Manage your organizations and their contacts."
+					})] }), /* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-3",
+						children: [/* @__PURE__ */ jsxs("span", {
+							className: "flex items-center gap-1.5 text-xs text-muted-foreground",
+							children: [/* @__PURE__ */ jsx(CircleDot, { className: "h-2 w-2 animate-pulse text-green-500" }), "Live"]
+						}), /* @__PURE__ */ jsx(ClientModalLink, {
+							href: organizations.new(),
+							loadingComponent: OrganizationFormSkeleton,
+							modalConfig: {
+								slideover: true,
+								position: "right"
+							},
+							prefetch: true,
+							children: /* @__PURE__ */ jsx("button", {
+								className: "inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90",
+								children: "New organization"
+							})
+						})]
+					})]
+				}),
+				hasPendingChanges && /* @__PURE__ */ jsxs("div", {
+					className: "mb-4 flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-3",
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-2 text-sm",
+						children: [/* @__PURE__ */ jsx(RefreshCw, { className: "h-4 w-4 text-primary" }), /* @__PURE__ */ jsx("span", {
+							className: "text-foreground",
+							children: hasNewRecords ? `${pendingCount} new update${pendingCount > 1 ? "s" : ""} available` : "Some records have changed"
+						})]
+					}), /* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-2",
+						children: [/* @__PURE__ */ jsx("button", {
+							onClick: refresh,
+							className: "rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90",
+							children: "Refresh"
+						}), /* @__PURE__ */ jsx("button", {
+							onClick: dismissUpdates,
+							className: "rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground",
+							children: /* @__PURE__ */ jsx(X, { className: "h-4 w-4" })
+						})]
+					})]
+				}),
+				/* @__PURE__ */ jsx(Table, {
+					resource: organizations$1,
+					baseUrl: "/organizations",
+					rowClassName: (row) => {
+						const classes = [];
+						if (row.deletedAt) classes.push("bg-muted/50 opacity-60");
+						if (isHighlighted(row.id)) classes.push("animate-pulse bg-primary/10 ring-1 ring-primary/20");
+						return classes.join(" ");
+					},
+					onRowClick: (row) => {
+						router$1.visit(organizations.edit(row.id));
+					},
+					renderCell: (column, value, row) => {
+						if (column.key === "name") return /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("div", {
+							className: "font-medium",
+							children: row.name
+						}), row.deletedAt && /* @__PURE__ */ jsx("span", {
+							className: "text-xs text-muted-foreground",
+							children: "(deleted)"
+						})] });
+						if (column.key === "city") {
+							const parts = [row.city, row.region].filter(Boolean);
+							return parts.length > 0 ? parts.join(", ") : null;
+						}
 					}
-				}),
-				/* @__PURE__ */ jsxs("div", {
-					className: "mb-4 space-y-3",
-					children: [/* @__PURE__ */ jsx(SearchInput, {
-						value: search,
-						onChange: handleSearchChange,
-						onSubmit: handleSearch,
-						placeholder: "Search organizations..."
-					}), /* @__PURE__ */ jsx(FilterBar, {
-						configs: organizationsFilterConfig,
-						filters: flop.params.filters ?? [],
-						customFilters: filters,
-						filterMode,
-						onFilterChange: (field, op, value) => flop.setFilter(field, op, value),
-						onFilterRemove: (field, op) => flop.removeFilter(field, op),
-						onCustomFilterChange: handleCustomFilterChange,
-						onClearFilters: handleClearFilters,
-						onFilterModeChange: handleFilterModeChange
-					})]
-				}),
-				/* @__PURE__ */ jsxs("div", {
-					className: "rounded-lg border border-border bg-card",
-					children: [/* @__PURE__ */ jsx(DataTable, {
-						columns,
-						data: organizations$1,
-						meta,
-						onSortChange: flop.setSort,
-						getSortDirection: flop.getSortDirection,
-						emptyState: "No organizations found.",
-						rowClassName: (row) => row.original.deletedAt ? "bg-muted/50 opacity-60" : ""
-					}), meta.totalPages && meta.totalPages > 1 && /* @__PURE__ */ jsx("div", {
-						className: "border-t border-border px-4 py-3",
-						children: /* @__PURE__ */ jsx(Pagination, {
-							meta,
-							onPageChange: flop.setPage,
-							className: "flex items-center justify-center gap-1"
-						})
-					})]
 				}),
 				/* @__PURE__ */ jsxs("div", {
 					className: "mt-3 text-xs text-muted-foreground",
 					children: [
-						meta.totalCount,
+						organizations$1.meta.totalCount,
 						" organization",
-						meta.totalCount !== 1 ? "s" : "",
+						organizations$1.meta.totalCount !== 1 ? "s" : "",
 						" total"
 					]
 				})
 			]
 		})
 	})] });
+}
+var Index_exports$2 = /* @__PURE__ */ __export({ default: () => ReportsIndex }, 1);
+var COUNTRY_NAMES = {
+	US: "United States",
+	CA: "Canada",
+	MX: "Mexico",
+	GB: "United Kingdom",
+	DE: "Germany",
+	FR: "France",
+	AU: "Australia"
+};
+function ReportsIndex() {
+	const { props } = usePage();
+	const { totals, contactsByOrganization, contactsByCountry, organizationsByCountry, contactsOverTime, recentActivity, trashed } = props;
+	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Head, { title: "Reports" }), /* @__PURE__ */ jsx("div", {
+		className: "px-6 py-6",
+		children: /* @__PURE__ */ jsxs("div", {
+			className: "mx-auto max-w-6xl",
+			children: [
+				/* @__PURE__ */ jsxs("div", {
+					className: "mb-8",
+					children: [/* @__PURE__ */ jsx("h1", {
+						className: "text-2xl font-semibold text-foreground",
+						children: "Reports"
+					}), /* @__PURE__ */ jsx("p", {
+						className: "mt-1 text-sm text-muted-foreground",
+						children: "Overview and analytics for your CRM data."
+					})]
+				}),
+				/* @__PURE__ */ jsxs("div", {
+					className: "mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4",
+					children: [
+						/* @__PURE__ */ jsx(StatCard, {
+							title: "Total Contacts",
+							value: totals?.contacts ?? 0,
+							icon: Users,
+							href: "/contacts"
+						}),
+						/* @__PURE__ */ jsx(StatCard, {
+							title: "Total Organizations",
+							value: totals?.organizations ?? 0,
+							icon: Building2,
+							href: "/organizations"
+						}),
+						/* @__PURE__ */ jsx(StatCard, {
+							title: "Team Members",
+							value: totals?.users ?? 0,
+							icon: User,
+							href: "/users"
+						}),
+						/* @__PURE__ */ jsx(StatCard, {
+							title: "Trashed Items",
+							value: (trashed?.contacts ?? 0) + (trashed?.organizations ?? 0),
+							icon: Trash2,
+							description: `${trashed?.contacts ?? 0} contacts, ${trashed?.organizations ?? 0} orgs`
+						})
+					]
+				}),
+				recentActivity && (recentActivity.contacts > 0 || recentActivity.organizations > 0) && /* @__PURE__ */ jsx("div", {
+					className: "mb-8 rounded-lg border border-primary/20 bg-primary/5 p-4",
+					children: /* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-3",
+						children: [/* @__PURE__ */ jsx("div", {
+							className: "rounded-md bg-primary/10 p-2",
+							children: /* @__PURE__ */ jsx(TrendingUp, { className: "h-5 w-5 text-primary" })
+						}), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("p", {
+							className: "text-sm font-medium text-foreground",
+							children: [
+								"Last ",
+								recentActivity.days,
+								" days activity"
+							]
+						}), /* @__PURE__ */ jsxs("p", {
+							className: "text-sm text-muted-foreground",
+							children: [
+								recentActivity.contacts,
+								" new contact",
+								recentActivity.contacts !== 1 ? "s" : "",
+								",",
+								" ",
+								recentActivity.organizations,
+								" new organization",
+								recentActivity.organizations !== 1 ? "s" : ""
+							]
+						})] })]
+					})
+				}),
+				/* @__PURE__ */ jsxs("div", {
+					className: "grid gap-6 lg:grid-cols-2",
+					children: [
+						/* @__PURE__ */ jsxs("div", {
+							className: "rounded-lg border border-border bg-card",
+							children: [/* @__PURE__ */ jsxs("div", {
+								className: "flex items-center justify-between border-b border-border px-5 py-4",
+								children: [/* @__PURE__ */ jsxs("div", {
+									className: "flex items-center gap-2",
+									children: [/* @__PURE__ */ jsx(BarChart3, { className: "h-4 w-4 text-muted-foreground" }), /* @__PURE__ */ jsx("h2", {
+										className: "text-sm font-medium text-foreground",
+										children: "Contacts by Organization"
+									})]
+								}), /* @__PURE__ */ jsx(Link, {
+									href: "/contacts",
+									className: "text-xs font-medium text-primary hover:text-primary/80",
+									children: "View all"
+								})]
+							}), /* @__PURE__ */ jsx("div", {
+								className: "p-5",
+								children: contactsByOrganization && contactsByOrganization.length > 0 ? /* @__PURE__ */ jsx("div", {
+									className: "space-y-4",
+									children: contactsByOrganization.map((org) => /* @__PURE__ */ jsx(BarRow, {
+										label: org.name,
+										value: org.count,
+										maxValue: contactsByOrganization[0]?.count ?? 1,
+										href: `/organizations/${org.id}/edit`
+									}, org.id))
+								}) : /* @__PURE__ */ jsx(EmptyState, {
+									icon: Building2,
+									title: "No data yet",
+									description: "Add contacts to organizations to see this report."
+								})
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
+							className: "rounded-lg border border-border bg-card",
+							children: [/* @__PURE__ */ jsx("div", {
+								className: "flex items-center justify-between border-b border-border px-5 py-4",
+								children: /* @__PURE__ */ jsxs("div", {
+									className: "flex items-center gap-2",
+									children: [/* @__PURE__ */ jsx(Calendar, { className: "h-4 w-4 text-muted-foreground" }), /* @__PURE__ */ jsx("h2", {
+										className: "text-sm font-medium text-foreground",
+										children: "Contacts Over Time"
+									})]
+								})
+							}), /* @__PURE__ */ jsx("div", {
+								className: "p-5",
+								children: contactsOverTime && contactsOverTime.length > 0 ? /* @__PURE__ */ jsx("div", {
+									className: "space-y-4",
+									children: contactsOverTime.map((item, index$7) => /* @__PURE__ */ jsx(BarRow, {
+										label: item.month,
+										value: item.count,
+										maxValue: Math.max(...contactsOverTime.map((i) => i.count), 1)
+									}, index$7))
+								}) : /* @__PURE__ */ jsx(EmptyState, {
+									icon: Calendar,
+									title: "No data yet",
+									description: "Contacts added over time will appear here."
+								})
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
+							className: "rounded-lg border border-border bg-card",
+							children: [/* @__PURE__ */ jsx("div", {
+								className: "flex items-center justify-between border-b border-border px-5 py-4",
+								children: /* @__PURE__ */ jsxs("div", {
+									className: "flex items-center gap-2",
+									children: [/* @__PURE__ */ jsx(MapPin, { className: "h-4 w-4 text-muted-foreground" }), /* @__PURE__ */ jsx("h2", {
+										className: "text-sm font-medium text-foreground",
+										children: "Contacts by Country"
+									})]
+								})
+							}), /* @__PURE__ */ jsx("div", {
+								className: "p-5",
+								children: contactsByCountry && contactsByCountry.length > 0 ? /* @__PURE__ */ jsx("div", {
+									className: "space-y-4",
+									children: contactsByCountry.slice(0, 5).map((item, index$7) => /* @__PURE__ */ jsx(BarRow, {
+										label: COUNTRY_NAMES[item.country] || item.country,
+										value: item.count,
+										maxValue: contactsByCountry[0]?.count ?? 1
+									}, index$7))
+								}) : /* @__PURE__ */ jsx(EmptyState, {
+									icon: MapPin,
+									title: "No data yet",
+									description: "Add country information to contacts to see this report."
+								})
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
+							className: "rounded-lg border border-border bg-card",
+							children: [/* @__PURE__ */ jsx("div", {
+								className: "flex items-center justify-between border-b border-border px-5 py-4",
+								children: /* @__PURE__ */ jsxs("div", {
+									className: "flex items-center gap-2",
+									children: [/* @__PURE__ */ jsx(MapPin, { className: "h-4 w-4 text-muted-foreground" }), /* @__PURE__ */ jsx("h2", {
+										className: "text-sm font-medium text-foreground",
+										children: "Organizations by Country"
+									})]
+								})
+							}), /* @__PURE__ */ jsx("div", {
+								className: "p-5",
+								children: organizationsByCountry && organizationsByCountry.length > 0 ? /* @__PURE__ */ jsx("div", {
+									className: "space-y-4",
+									children: organizationsByCountry.slice(0, 5).map((item, index$7) => /* @__PURE__ */ jsx(BarRow, {
+										label: COUNTRY_NAMES[item.country] || item.country,
+										value: item.count,
+										maxValue: organizationsByCountry[0]?.count ?? 1
+									}, index$7))
+								}) : /* @__PURE__ */ jsx(EmptyState, {
+									icon: MapPin,
+									title: "No data yet",
+									description: "Add country information to organizations to see this report."
+								})
+							})]
+						})
+					]
+				}),
+				(trashed?.contacts > 0 || trashed?.organizations > 0) && /* @__PURE__ */ jsx("div", {
+					className: "mt-8",
+					children: /* @__PURE__ */ jsx("div", {
+						className: "rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900/50 dark:bg-yellow-900/10",
+						children: /* @__PURE__ */ jsxs("div", {
+							className: "flex items-start gap-3",
+							children: [/* @__PURE__ */ jsx("div", {
+								className: "rounded-md bg-yellow-100 p-2 dark:bg-yellow-900/30",
+								children: /* @__PURE__ */ jsx(Trash2, { className: "h-5 w-5 text-yellow-600 dark:text-yellow-500" })
+							}), /* @__PURE__ */ jsxs("div", {
+								className: "flex-1",
+								children: [
+									/* @__PURE__ */ jsx("p", {
+										className: "text-sm font-medium text-yellow-800 dark:text-yellow-200",
+										children: "Trashed Items"
+									}),
+									/* @__PURE__ */ jsxs("p", {
+										className: "mt-1 text-sm text-yellow-700 dark:text-yellow-300",
+										children: [
+											"You have ",
+											trashed.contacts,
+											" trashed contact",
+											trashed.contacts !== 1 ? "s" : "",
+											" and",
+											" ",
+											trashed.organizations,
+											" trashed organization",
+											trashed.organizations !== 1 ? "s" : "",
+											". You can restore them from the respective lists by filtering for trashed items."
+										]
+									}),
+									/* @__PURE__ */ jsxs("div", {
+										className: "mt-3 flex gap-3",
+										children: [trashed.contacts > 0 && /* @__PURE__ */ jsx(Link, {
+											href: "/contacts?trashed=only",
+											className: "text-sm font-medium text-yellow-700 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300",
+											children: "View trashed contacts"
+										}), trashed.organizations > 0 && /* @__PURE__ */ jsx(Link, {
+											href: "/organizations?trashed=only",
+											className: "text-sm font-medium text-yellow-700 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300",
+											children: "View trashed organizations"
+										})]
+									})
+								]
+							})]
+						})
+					})
+				})
+			]
+		})
+	})] });
+}
+function StatCard({ title, value, icon: Icon, href, description }) {
+	const content = /* @__PURE__ */ jsx("div", {
+		className: "rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/20 hover:bg-accent/50",
+		children: /* @__PURE__ */ jsxs("div", {
+			className: "flex items-start justify-between",
+			children: [/* @__PURE__ */ jsxs("div", { children: [
+				/* @__PURE__ */ jsx("p", {
+					className: "text-xs font-medium uppercase tracking-wider text-muted-foreground",
+					children: title
+				}),
+				/* @__PURE__ */ jsx("p", {
+					className: "mt-2 text-2xl font-semibold tabular-nums text-foreground",
+					children: value.toLocaleString()
+				}),
+				description && /* @__PURE__ */ jsx("p", {
+					className: "mt-1 text-xs text-muted-foreground",
+					children: description
+				})
+			] }), /* @__PURE__ */ jsx("div", {
+				className: "rounded-md bg-primary/5 p-2",
+				children: /* @__PURE__ */ jsx(Icon, { className: "h-4 w-4 text-primary" })
+			})]
+		})
+	});
+	if (href) return /* @__PURE__ */ jsx(Link, {
+		href,
+		children: content
+	});
+	return content;
+}
+function BarRow({ label, value, maxValue, href }) {
+	const percentage = maxValue > 0 ? value / maxValue * 100 : 0;
+	const content = /* @__PURE__ */ jsxs("div", {
+		className: "group",
+		children: [/* @__PURE__ */ jsxs("div", {
+			className: "flex items-center justify-between text-sm",
+			children: [/* @__PURE__ */ jsx("span", {
+				className: "truncate text-foreground group-hover:text-primary transition-colors",
+				children: label
+			}), /* @__PURE__ */ jsxs("div", {
+				className: "flex items-center gap-1.5",
+				children: [/* @__PURE__ */ jsx("span", {
+					className: "tabular-nums text-muted-foreground",
+					children: value
+				}), href && /* @__PURE__ */ jsx(ArrowUpRight, { className: "h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" })]
+			})]
+		}), /* @__PURE__ */ jsx("div", {
+			className: "mt-1.5 h-2 w-full overflow-hidden rounded-full bg-muted",
+			children: /* @__PURE__ */ jsx("div", {
+				className: "h-full rounded-full bg-primary transition-all duration-300",
+				style: { width: `${percentage}%` }
+			})
+		})]
+	});
+	if (href) return /* @__PURE__ */ jsx(Link, {
+		href,
+		className: "block",
+		children: content
+	});
+	return content;
+}
+function EmptyState({ icon: Icon, title, description }) {
+	return /* @__PURE__ */ jsxs("div", {
+		className: "flex flex-col items-center justify-center py-8 text-center",
+		children: [
+			/* @__PURE__ */ jsx("div", {
+				className: "rounded-full bg-muted p-3",
+				children: /* @__PURE__ */ jsx(Icon, { className: "h-5 w-5 text-muted-foreground" })
+			}),
+			/* @__PURE__ */ jsx("h3", {
+				className: "mt-3 text-sm font-medium text-foreground",
+				children: title
+			}),
+			/* @__PURE__ */ jsx("p", {
+				className: "mt-1 text-sm text-muted-foreground",
+				children: description
+			})
+		]
+	});
 }
 function Checkbox({ className, ...props }) {
 	return /* @__PURE__ */ jsx(CheckboxPrimitive.Root, {
@@ -4165,13 +4818,13 @@ function UsersCreate({ onClose }) {
 			preserveScroll: true,
 			onSuccess: () => {
 				if (onClose) onClose();
-				router.visit(users.index());
+				router$1.visit(users.index());
 			}
 		});
 	};
 	const handleCancel = () => {
 		if (onClose) onClose();
-		else router.visit(users.index());
+		else router$1.visit(users.index());
 	};
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Head, { title: "Create User" }), /* @__PURE__ */ jsxs("div", {
 		className: "p-6",
@@ -4295,26 +4948,32 @@ function UsersEdit({ onClose }) {
 			preserveScroll: true,
 			onSuccess: () => {
 				if (onClose) onClose();
-				router.visit(users.index());
+				router$1.visit(users.index());
 			}
 		});
 	};
 	const handleDelete = () => {
-		if (confirm(`Are you sure you want to delete ${user.name}?`)) router.visit(users.delete(user.id));
+		if (confirm(`Are you sure you want to delete ${user.name}?`)) router$1.visit(users.delete(user.id));
 	};
 	const handleRestore = () => {
-		router.visit(users.restore(user.id));
+		router$1.visit(users.restore(user.id));
 	};
 	const handleCancel = () => {
 		if (onClose) onClose();
-		else router.visit(users.index());
+		else router$1.visit(users.index());
 	};
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Head, { title: `Edit ${user.name}` }), /* @__PURE__ */ jsxs("div", {
 		className: "p-6",
 		children: [
-			/* @__PURE__ */ jsxs("h2", {
-				className: "text-lg font-semibold mb-6",
-				children: ["Edit ", user.name]
+			/* @__PURE__ */ jsxs("div", {
+				className: "mb-6 flex items-start justify-between gap-4",
+				children: [/* @__PURE__ */ jsxs("h2", {
+					className: "text-lg font-semibold",
+					children: ["Edit ", user.name]
+				}), /* @__PURE__ */ jsx(ViewerIndicator, {
+					type: "user",
+					id: user.id
+				})]
 			}),
 			user.deletedAt && /* @__PURE__ */ jsx(DeletedNotice, {
 				entityName: "user",
@@ -4414,292 +5073,136 @@ function UsersEdit({ onClose }) {
 		]
 	})] });
 }
-const usersFilterConfig = [
-	{
-		field: "role",
-		label: "Role",
-		type: "enum",
-		operators: ["==", "!="],
-		icon: User,
-		customParam: "role",
-		options: [{
-			value: "owner",
-			label: "Owner"
-		}, {
-			value: "user",
-			label: "User"
-		}]
-	},
-	{
-		field: "trashed",
-		label: "Status",
-		type: "enum",
-		operators: ["=="],
-		icon: Settings,
-		customParam: "trashed",
-		options: [
-			{
-				value: "not_trashed",
-				label: "Active"
-			},
-			{
-				value: "with",
-				label: "With Deleted"
-			},
-			{
-				value: "only",
-				label: "Only Deleted"
-			}
-		]
-	},
-	{
-		field: "first_name",
-		label: "First Name",
-		type: "string",
-		operators: [
-			"ilike",
-			"==",
-			"!="
-		],
-		icon: UserCircle,
-		placeholder: "Enter first name..."
-	},
-	{
-		field: "last_name",
-		label: "Last Name",
-		type: "string",
-		operators: [
-			"ilike",
-			"==",
-			"!="
-		],
-		icon: UserCircle,
-		placeholder: "Enter last name..."
-	},
-	{
-		field: "email",
-		label: "Email",
-		type: "string",
-		operators: ["ilike", "=="],
-		icon: Mail,
-		placeholder: "Enter email..."
-	}
-];
-var columns_exports$2 = /* @__PURE__ */ __export({ createColumns: () => createColumns }, 1);
-function createColumns({ onDelete, onRestore }) {
-	return [
-		{
-			accessorKey: "name",
-			header: () => /* @__PURE__ */ jsx(SortableColumnHeader, {
-				field: "last_name",
-				children: "Name"
-			}),
-			cell: ({ row }) => {
-				const user = row.original;
-				return /* @__PURE__ */ jsxs("div", {
-					className: "flex items-center gap-3",
-					children: [
-						user.photo ? /* @__PURE__ */ jsx("img", {
-							src: user.photo,
-							alt: "",
-							className: "h-8 w-8 rounded-full object-cover"
-						}) : /* @__PURE__ */ jsxs("div", {
-							className: "flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-600",
-							children: [user.firstName?.[0], user.lastName?.[0]]
-						}),
-						/* @__PURE__ */ jsx("span", {
-							className: "font-medium",
-							children: user.name
-						}),
-						user.deletedAt && /* @__PURE__ */ jsx(Badge, {
-							variant: "destructive",
-							children: "Deleted"
-						})
-					]
-				});
-			}
-		},
-		{
-			accessorKey: "email",
-			header: () => /* @__PURE__ */ jsx(SortableColumnHeader, {
-				field: "email",
-				children: "Email"
-			})
-		},
-		{
-			accessorKey: "owner",
-			header: "Role",
-			cell: ({ row }) => {
-				const user = row.original;
-				return /* @__PURE__ */ jsx(Badge, {
-					variant: user.owner ? "default" : "secondary",
-					children: user.owner ? "Owner" : "User"
-				});
-			}
-		},
-		{
-			id: "actions",
-			header: () => /* @__PURE__ */ jsx("div", {
-				className: "text-right",
-				children: "Actions"
-			}),
-			cell: ({ row }) => {
-				const user = row.original;
-				return /* @__PURE__ */ jsxs("div", {
-					className: "flex justify-end gap-2",
-					children: [/* @__PURE__ */ jsx(ClientModalLink, {
-						href: users.edit(user.id),
-						children: /* @__PURE__ */ jsx(Button, {
-							variant: "ghost",
-							size: "sm",
-							children: "Edit"
-						})
-					}), user.deletedAt ? /* @__PURE__ */ jsx(Button, {
-						variant: "ghost",
-						size: "sm",
-						onClick: () => onRestore(user),
-						children: "Restore"
-					}) : /* @__PURE__ */ jsx(Button, {
-						variant: "ghost",
-						size: "sm",
-						className: "text-red-600 hover:text-red-700",
-						onClick: () => onDelete(user),
-						children: "Delete"
-					})]
-				});
-			}
-		}
-	];
+function UserFormSkeleton() {
+	return /* @__PURE__ */ jsxs("div", {
+		className: "p-6",
+		children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-7 w-32 mb-6" }), /* @__PURE__ */ jsxs("div", {
+			className: "space-y-5",
+			children: [
+				/* @__PURE__ */ jsxs("div", {
+					className: "grid gap-5 sm:grid-cols-2",
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-20 mb-1.5" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-full" })] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-20 mb-1.5" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-full" })] })]
+				}),
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-12 mb-1.5" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-full" })] }),
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-18 mb-1.5" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-full" })] }),
+				/* @__PURE__ */ jsxs("div", {
+					className: "flex items-center gap-2",
+					children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-4 rounded" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-4 w-36" })]
+				}),
+				/* @__PURE__ */ jsxs("div", {
+					className: "flex justify-end gap-3 border-t border-border pt-5",
+					children: [/* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-20" }), /* @__PURE__ */ jsx(Skeleton, { className: "h-10 w-28" })]
+				})
+			]
+		})]
+	});
 }
-var Index_exports$2 = /* @__PURE__ */ __export({ default: () => UsersIndex }, 1);
+var Index_exports$3 = /* @__PURE__ */ __export({ default: () => UsersIndex }, 1);
 function UsersIndex() {
 	const { props } = usePage();
 	const users$1 = props.users;
-	const { meta, filters } = props;
-	const [search, setSearch] = useState(filters?.search || "");
-	const [filterMode, setFilterMode] = useState(props.filter_mode || "all");
-	const flop = useFlopParams(meta, { onParamsChange: (params) => {
-		const query = {
-			...flopToQueryParams(params),
-			search: search || void 0,
-			role: filters?.role || void 0,
-			trashed: filters?.trashed || void 0,
-			filter_mode: filterMode !== "all" ? filterMode : void 0
-		};
-		router.visit(users.index({ query }), {
-			preserveState: true,
-			preserveScroll: true
-		});
-	} });
-	const handleSearch = (e) => {
-		e.preventDefault();
-		router.visit(users.index({ query: {
-			search: search || void 0,
-			role: filters?.role || void 0,
-			trashed: filters?.trashed || void 0,
-			filter_mode: filterMode !== "all" ? filterMode : void 0
-		} }), { preserveState: true });
-	};
-	const handleSearchChange = (e) => {
-		const value = e.target.value;
-		setSearch(value);
-		if (!value && filters?.search) router.visit(users.index({ query: {
-			role: filters?.role || void 0,
-			trashed: filters?.trashed || void 0,
-			filter_mode: filterMode !== "all" ? filterMode : void 0
-		} }), { preserveState: true });
-	};
-	const handleCustomFilterChange = (param, value) => {
-		const query = {
-			search: filters?.search,
-			role: filters?.role,
-			trashed: filters?.trashed,
-			filter_mode: filterMode !== "all" ? filterMode : void 0
-		};
-		query[param] = value;
-		router.visit(users.index({ query }), { preserveState: true });
-	};
-	const handleFilterModeChange = (mode) => {
-		setFilterMode(mode);
-		router.visit(users.index({ query: {
-			...flopToQueryParams(flop.params),
-			search: filters?.search,
-			role: filters?.role,
-			trashed: filters?.trashed,
-			filter_mode: mode !== "all" ? mode : void 0
-		} }), { preserveState: true });
-	};
-	const handleClearFilters = () => {
-		flop.clearFilters();
-		router.visit(users.index({ query: { search: filters?.search } }), { preserveState: true });
-	};
-	const handleDelete = (user) => {
-		if (confirm(`Are you sure you want to delete ${user.name}?`)) router.visit(users.delete(user.id));
-	};
-	const handleRestore = (user) => {
-		router.visit(users.restore(user.id));
-	};
-	const columns = useMemo(() => createColumns({
-		onDelete: handleDelete,
-		onRestore: handleRestore
-	}), []);
+	const { hasPendingChanges, hasNewRecords, pendingCount, isHighlighted, refresh, dismissUpdates } = useTableRealtime({
+		topic: "crm:users",
+		createEvent: "user_created",
+		updateEvent: "user_updated",
+		deleteEvent: "user_deleted"
+	});
 	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Head, { title: "Users" }), /* @__PURE__ */ jsx("div", {
 		className: "px-6 py-6",
 		children: /* @__PURE__ */ jsxs("div", {
 			className: "mx-auto max-w-5xl",
 			children: [
-				/* @__PURE__ */ jsx(PageHeader, {
-					title: "Users",
-					description: "Manage team members and their permissions.",
-					action: {
-						label: "New user",
-						href: users.new()
+				/* @__PURE__ */ jsxs("div", {
+					className: "mb-6 flex items-center justify-between",
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h1", {
+						className: "text-2xl font-semibold text-foreground",
+						children: "Users"
+					}), /* @__PURE__ */ jsx("p", {
+						className: "mt-1 text-sm text-muted-foreground",
+						children: "Manage team members and their permissions."
+					})] }), /* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-3",
+						children: [/* @__PURE__ */ jsxs("span", {
+							className: "flex items-center gap-1.5 text-xs text-muted-foreground",
+							children: [/* @__PURE__ */ jsx(CircleDot, { className: "h-2 w-2 animate-pulse text-green-500" }), "Live"]
+						}), /* @__PURE__ */ jsx(ClientModalLink, {
+							href: users.new(),
+							loadingComponent: UserFormSkeleton,
+							modalConfig: {
+								slideover: true,
+								position: "right"
+							},
+							prefetch: true,
+							children: /* @__PURE__ */ jsx("button", {
+								className: "inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90",
+								children: "New user"
+							})
+						})]
+					})]
+				}),
+				hasPendingChanges && /* @__PURE__ */ jsxs("div", {
+					className: "mb-4 flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-3",
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-2 text-sm",
+						children: [/* @__PURE__ */ jsx(RefreshCw, { className: "h-4 w-4 text-primary" }), /* @__PURE__ */ jsx("span", {
+							className: "text-foreground",
+							children: hasNewRecords ? `${pendingCount} new update${pendingCount > 1 ? "s" : ""} available` : "Some records have changed"
+						})]
+					}), /* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-2",
+						children: [/* @__PURE__ */ jsx("button", {
+							onClick: refresh,
+							className: "rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90",
+							children: "Refresh"
+						}), /* @__PURE__ */ jsx("button", {
+							onClick: dismissUpdates,
+							className: "rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground",
+							children: /* @__PURE__ */ jsx(X, { className: "h-4 w-4" })
+						})]
+					})]
+				}),
+				/* @__PURE__ */ jsx(Table, {
+					resource: users$1,
+					baseUrl: "/users",
+					rowClassName: (row) => {
+						const classes = [];
+						if (row.deletedAt) classes.push("bg-muted/50 opacity-60");
+						if (isHighlighted(row.id)) classes.push("animate-pulse bg-primary/10 ring-1 ring-primary/20");
+						return classes.join(" ");
+					},
+					onRowClick: (row) => {
+						router$1.visit(users.edit(row.id));
+					},
+					renderCell: (column, value, row) => {
+						if (column.key === "name") return /* @__PURE__ */ jsxs("div", {
+							className: "flex items-center gap-3",
+							children: [row.photo ? /* @__PURE__ */ jsx("img", {
+								src: row.photo,
+								alt: "",
+								className: "h-8 w-8 rounded-full object-cover"
+							}) : /* @__PURE__ */ jsx("div", {
+								className: "flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium",
+								children: row.name?.charAt(0)?.toUpperCase()
+							}), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("div", {
+								className: "font-medium",
+								children: row.name
+							}), row.deletedAt && /* @__PURE__ */ jsx("span", {
+								className: "text-xs text-muted-foreground",
+								children: "(deleted)"
+							})] })]
+						});
+						if (column.key === "owner") return /* @__PURE__ */ jsx("span", {
+							className: cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", value === "Owner" ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"),
+							children: String(value)
+						});
 					}
-				}),
-				/* @__PURE__ */ jsxs("div", {
-					className: "mb-4 space-y-3",
-					children: [/* @__PURE__ */ jsx(SearchInput, {
-						value: search,
-						onChange: handleSearchChange,
-						onSubmit: handleSearch,
-						placeholder: "Search users..."
-					}), /* @__PURE__ */ jsx(FilterBar, {
-						configs: usersFilterConfig,
-						filters: flop.params.filters ?? [],
-						customFilters: filters,
-						filterMode,
-						onFilterChange: (field, op, value) => flop.setFilter(field, op, value),
-						onFilterRemove: (field, op) => flop.removeFilter(field, op),
-						onCustomFilterChange: handleCustomFilterChange,
-						onClearFilters: handleClearFilters,
-						onFilterModeChange: handleFilterModeChange
-					})]
-				}),
-				/* @__PURE__ */ jsxs("div", {
-					className: "rounded-lg border border-border bg-card",
-					children: [/* @__PURE__ */ jsx(DataTable, {
-						columns,
-						data: users$1,
-						meta,
-						onSortChange: flop.setSort,
-						getSortDirection: flop.getSortDirection,
-						emptyState: "No users found.",
-						rowClassName: (row) => row.original.deletedAt ? "bg-muted/50 opacity-60" : ""
-					}), meta.totalPages && meta.totalPages > 1 && /* @__PURE__ */ jsx("div", {
-						className: "border-t border-border px-4 py-3",
-						children: /* @__PURE__ */ jsx(Pagination, {
-							meta,
-							onPageChange: flop.setPage,
-							className: "flex items-center justify-center gap-1"
-						})
-					})]
 				}),
 				/* @__PURE__ */ jsxs("div", {
 					className: "mt-3 text-xs text-muted-foreground",
 					children: [
-						meta.totalCount,
+						users$1.meta.totalCount,
 						" user",
-						meta.totalCount !== 1 ? "s" : "",
+						users$1.meta.totalCount !== 1 ? "s" : "",
 						" total"
 					]
 				})
@@ -4713,17 +5216,15 @@ var pages = {
 	"./pages/Contacts/Create.tsx": Create_exports,
 	"./pages/Contacts/Edit.tsx": Edit_exports,
 	"./pages/Contacts/Index.tsx": Index_exports,
-	"./pages/Contacts/columns.tsx": columns_exports,
 	"./pages/Dashboard.tsx": Dashboard_exports,
 	"./pages/Home.tsx": Home_exports,
 	"./pages/Organizations/Create.tsx": Create_exports$1,
 	"./pages/Organizations/Edit.tsx": Edit_exports$1,
 	"./pages/Organizations/Index.tsx": Index_exports$1,
-	"./pages/Organizations/columns.tsx": columns_exports$1,
+	"./pages/Reports/Index.tsx": Index_exports$2,
 	"./pages/Users/Create.tsx": Create_exports$2,
 	"./pages/Users/Edit.tsx": Edit_exports$2,
-	"./pages/Users/Index.tsx": Index_exports$2,
-	"./pages/Users/columns.tsx": columns_exports$2
+	"./pages/Users/Index.tsx": Index_exports$3
 };
 var guestPages = [
 	"Auth/Login",
