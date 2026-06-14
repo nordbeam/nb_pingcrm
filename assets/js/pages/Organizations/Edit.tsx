@@ -51,15 +51,7 @@ export default function OrganizationsEdit({ onClose }: OrganizationsEditPageProp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    form.submit({
-      preserveScroll: true,
-      onSuccess: () => {
-        if (onClose) {
-          onClose();
-        }
-        router.visit(organizations.index());
-      },
-    });
+    form.submit({ preserveScroll: true });
   };
 
   const handleDelete = () => {

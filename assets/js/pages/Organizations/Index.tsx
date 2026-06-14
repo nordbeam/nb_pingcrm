@@ -1,4 +1,4 @@
-import { Head, usePage, ClientModalLink, router } from "@/lib/inertia";
+import { Head, usePage, ClientModalLink, useModalStack } from "@/lib/inertia";
 import type { OrganizationsIndexProps } from "@/types";
 import type { TableResource } from "@/components/flop";
 import { Table } from "@/components/flop";
@@ -23,6 +23,7 @@ interface Organization {
 
 export default function OrganizationsIndex() {
   const { props } = usePage<OrganizationsIndexProps>();
+  const { visitModal } = useModalStack();
   const organizations = props.organizations as TableResource<Organization>;
 
   // Real-time updates
@@ -82,7 +83,7 @@ export default function OrganizationsIndex() {
               return classes.join(" ");
             }}
             onRowClick={(row) => {
-              router.visit(orgsRoutes.edit(row.id));
+              visitModal(orgsRoutes.edit(row.id));
             }}
             renderCell={(column, value, row) => {
               // Custom rendering for name with delete indicator

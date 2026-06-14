@@ -3,6 +3,7 @@ defmodule NbPingcrmWeb.OrganizationsController do
   use NbInertia.Controller
 
   alias NbFlop.Serializers.TableResourceSerializer
+  alias NbInertia.Modal.Redirector
   alias NbPingcrm.CRM
   alias NbPingcrm.CRM.Organization
   alias NbPingcrmWeb.InertiaShared.Auth
@@ -51,7 +52,7 @@ defmodule NbPingcrmWeb.OrganizationsController do
       {:ok, _organization} ->
         conn
         |> put_flash(:success, "Organization created.")
-        |> redirect(to: ~p"/organizations")
+        |> redirect_after_modal_submit(modal_to: ~p"/organizations")
 
       {:error, changeset} ->
         conn
@@ -82,7 +83,10 @@ defmodule NbPingcrmWeb.OrganizationsController do
       {:ok, _organization} ->
         conn
         |> put_flash(:success, "Organization updated.")
-        |> redirect(to: ~p"/organizations/#{id}/edit")
+        |> redirect_after_modal_submit(
+          modal_to: ~p"/organizations",
+          default_to: ~p"/organizations/#{id}/edit"
+        )
 
       {:error, changeset} ->
         conn
@@ -101,12 +105,12 @@ defmodule NbPingcrmWeb.OrganizationsController do
       {:ok, _organization} ->
         conn
         |> put_flash(:success, "Organization deleted.")
-        |> redirect(to: ~p"/organizations")
+        |> redirect_after_modal_submit(modal_to: ~p"/organizations")
 
       {:error, _changeset} ->
         conn
         |> put_flash(:error, "Unable to delete organization.")
-        |> redirect(to: ~p"/organizations")
+        |> redirect_after_modal_submit(modal_to: ~p"/organizations")
     end
   end
 
@@ -118,12 +122,18 @@ defmodule NbPingcrmWeb.OrganizationsController do
       {:ok, _organization} ->
         conn
         |> put_flash(:success, "Organization restored.")
-        |> redirect(to: ~p"/organizations/#{id}/edit")
+        |> redirect_after_modal_submit(
+          modal_to: ~p"/organizations",
+          default_to: ~p"/organizations/#{id}/edit"
+        )
 
       {:error, _changeset} ->
         conn
         |> put_flash(:error, "Unable to restore organization.")
-        |> redirect(to: ~p"/organizations/#{id}/edit")
+        |> redirect_after_modal_submit(
+          modal_to: ~p"/organizations",
+          default_to: ~p"/organizations/#{id}/edit"
+        )
     end
   end
 
@@ -135,6 +145,17 @@ defmodule NbPingcrmWeb.OrganizationsController do
         end)
       end)
 
-    Inertia.Controller.assign_errors(conn, errors)
+    NbInertia.CoreController.assign_errors(conn, errors)
+  end
+
+  defp redirect_after_modal_submit(conn, opts) do
+    modal_to = Keyword.fetch!(opts, :modal_to)
+    default_to = Keyword.get(opts, :default_to, modal_to)
+
+    if Redirector.from_modal?(conn) do
+      Redirector.redirect_modal(conn, to: modal_to)
+    else
+      redirect(conn, to: default_to)
+    end
   end
 end

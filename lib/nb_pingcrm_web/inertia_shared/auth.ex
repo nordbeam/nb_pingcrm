@@ -16,7 +16,7 @@ defmodule NbPingcrmWeb.InertiaShared.Auth do
   @impl NbInertia.SharedProps.Behaviour
   def build_props(conn, _opts) do
     scope = conn.assigns[:current_scope]
-    flash = Phoenix.Flash.get(conn.assigns, :flash) || %{}
+    flash = NbInertia.Flash.get_flash_for_response(conn)
 
     base_props = %{
       flash: normalize_flash(flash)

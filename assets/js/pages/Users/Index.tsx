@@ -1,4 +1,4 @@
-import { Head, usePage, ClientModalLink, router } from "@/lib/inertia";
+import { Head, usePage, ClientModalLink, useModalStack } from "@/lib/inertia";
 import type { UsersIndexProps } from "@/types";
 import type { TableResource } from "@/components/flop";
 import { Table } from "@/components/flop";
@@ -19,6 +19,7 @@ interface User {
 
 export default function UsersIndex() {
   const { props } = usePage<UsersIndexProps>();
+  const { visitModal } = useModalStack();
   const users = props.users as TableResource<User>;
 
   // Real-time updates
@@ -78,7 +79,7 @@ export default function UsersIndex() {
               return classes.join(" ");
             }}
             onRowClick={(row) => {
-              router.visit(usersRoutes.edit(row.id));
+              visitModal(usersRoutes.edit(row.id));
             }}
             renderCell={(column, value, row) => {
               // Custom rendering for name column to include photo

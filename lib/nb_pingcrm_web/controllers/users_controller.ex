@@ -3,6 +3,7 @@ defmodule NbPingcrmWeb.UsersController do
   use NbInertia.Controller
 
   alias NbFlop.Serializers.TableResourceSerializer
+  alias NbInertia.Modal.Redirector
   alias NbPingcrm.Accounts
   alias NbPingcrm.Accounts.User
   alias NbPingcrmWeb.InertiaShared.Auth
@@ -19,7 +20,7 @@ defmodule NbPingcrmWeb.UsersController do
   end
 
   inertia_page :users_edit do
-    prop(:user, UserSerializer)
+    prop(:edited_user, UserSerializer)
   end
 
   def index(conn, params) do
@@ -50,7 +51,7 @@ defmodule NbPingcrmWeb.UsersController do
       {:ok, _user} ->
         conn
         |> put_flash(:success, "User created.")
-        |> redirect(to: ~p"/users")
+        |> redirect_after_modal_submit(modal_to: ~p"/users")
 
       {:error, changeset} ->
         conn
@@ -63,7 +64,7 @@ defmodule NbPingcrmWeb.UsersController do
     account_id = conn.assigns.current_scope.user.account_id
     user = Accounts.get_user_for_account!(account_id, id)
 
-    render_inertia_modal(conn, :users_edit, [user: {UserSerializer, user}],
+    render_inertia_modal(conn, :users_edit, [edited_user: {UserSerializer, user}],
       base_url: ~p"/users",
       slideover: true
     )
@@ -78,12 +79,15 @@ defmodule NbPingcrmWeb.UsersController do
       {:ok, _user} ->
         conn
         |> put_flash(:success, "User updated.")
-        |> redirect(to: ~p"/users/#{id}/edit")
+        |> redirect_after_modal_submit(
+          modal_to: ~p"/users",
+          default_to: ~p"/users/#{id}/edit"
+        )
 
       {:error, changeset} ->
         conn
         |> assign_changeset_errors(changeset)
-        |> render_inertia(:users_edit, user: {UserSerializer, user})
+        |> render_inertia(:users_edit, edited_user: {UserSerializer, user})
     end
   end
 
@@ -95,12 +99,12 @@ defmodule NbPingcrmWeb.UsersController do
       {:ok, _user} ->
         conn
         |> put_flash(:success, "User deleted.")
-        |> redirect(to: ~p"/users")
+        |> redirect_after_modal_submit(modal_to: ~p"/users")
 
       {:error, _changeset} ->
         conn
         |> put_flash(:error, "Unable to delete user.")
-        |> redirect(to: ~p"/users")
+        |> redirect_after_modal_submit(modal_to: ~p"/users")
     end
   end
 
@@ -112,12 +116,18 @@ defmodule NbPingcrmWeb.UsersController do
       {:ok, _user} ->
         conn
         |> put_flash(:success, "User restored.")
-        |> redirect(to: ~p"/users/#{id}/edit")
+        |> redirect_after_modal_submit(
+          modal_to: ~p"/users",
+          default_to: ~p"/users/#{id}/edit"
+        )
 
       {:error, _changeset} ->
         conn
         |> put_flash(:error, "Unable to restore user.")
-        |> redirect(to: ~p"/users/#{id}/edit")
+        |> redirect_after_modal_submit(
+          modal_to: ~p"/users",
+          default_to: ~p"/users/#{id}/edit"
+        )
     end
   end
 
@@ -129,6 +139,17 @@ defmodule NbPingcrmWeb.UsersController do
         end)
       end)
 
-    Inertia.Controller.assign_errors(conn, errors)
+    NbInertia.CoreController.assign_errors(conn, errors)
+  end
+
+  defp redirect_after_modal_submit(conn, opts) do
+    modal_to = Keyword.fetch!(opts, :modal_to)
+    default_to = Keyword.get(opts, :default_to, modal_to)
+
+    if Redirector.from_modal?(conn) do
+      Redirector.redirect_modal(conn, to: modal_to)
+    else
+      redirect(conn, to: default_to)
+    end
   end
 end

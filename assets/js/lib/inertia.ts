@@ -1,7 +1,8 @@
 // Inertia.js integration with nb_routes support (React)
 //
-// Official Inertia's router and Link already support RouteResult objects
-// (UrlMethodPair) natively. We import from @inertiajs/react directly.
+// Official Inertia's Link already supports RouteResult objects natively.
+// The router export comes from nb_inertia so modal-originated requests
+// automatically carry modal headers.
 //
 // nb_inertia adds: useForm with route binding, Head/usePage with modal context
 //
@@ -12,8 +13,8 @@
 //   router.visit(user_path(1));           // Works with RouteResult objects
 //   <Link href={user_path(1)}>User</Link> // Works with RouteResult objects
 
-// Official Inertia - router and Link support RouteResult (UrlMethodPair) natively
-export { router, Link } from '@inertiajs/react';
+export { router } from '@nordbeam/nb-inertia/react/router';
+export { Link } from '@inertiajs/react';
 
 // nb_inertia - useForm with route binding
 export { useForm } from '@nordbeam/nb-inertia/react/useForm';
@@ -32,6 +33,7 @@ export {
   InitialModalHandler,
   // SSR-safe modal link wrapper
   ClientModalLink,
+  Modal,
   // Link component that triggers modal fetches
   ModalLink,
   // Context providers and hooks
@@ -39,6 +41,7 @@ export {
   ModalPageProvider,
   useModalStack,
   useModal,
+  useCurrentModal,
   useIsInModal,
   useModalPageContext,
   // Types and config

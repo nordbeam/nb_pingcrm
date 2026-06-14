@@ -88,6 +88,25 @@ defmodule NbPingcrmWeb.UserSessionControllerTest do
       assert_inertia_props(conn, [:stats, :activities, :user, :account])
     end
 
+    test "forces a full inertia redirect for login requests", %{conn: conn, user: user} do
+      user = set_password(user)
+
+      conn =
+        conn
+        |> put_req_header("x-inertia", "true")
+        |> put_req_header("x-requested-with", "XMLHttpRequest")
+        |> put_req_header("x-csrf-token", Plug.CSRFProtection.get_csrf_token())
+        |> post(~p"/users/log-in", %{
+          "user" => %{"email" => user.email, "password" => valid_user_password()}
+        })
+
+      assert conn.status == 409
+      assert get_resp_header(conn, "location") == [~p"/"]
+      assert get_resp_header(conn, "x-inertia-location") == [~p"/"]
+      assert get_session(conn, :user_token)
+      assert conn.resp_cookies["_nb_pingcrm_key"]
+    end
+
     test "logs the user in with remember me", %{conn: conn, user: user} do
       user = set_password(user)
 
@@ -190,7 +209,9 @@ defmodule NbPingcrmWeb.UserSessionControllerTest do
 
       assert_inertia_page(conn, "Auth/Login")
       assert_inertia_prop(conn, :mode, "magic")
-      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "The link is invalid or it has expired."
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "The link is invalid or it has expired."
     end
   end
 
@@ -207,6 +228,22 @@ defmodule NbPingcrmWeb.UserSessionControllerTest do
       assert redirected_to(conn) == ~p"/"
       refute get_session(conn, :user_token)
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Logged out successfully"
+    end
+
+    test "forces a full inertia redirect for logout requests", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> log_in_user(user)
+        |> recycle()
+        |> put_req_header("x-inertia", "true")
+        |> put_req_header("x-requested-with", "XMLHttpRequest")
+        |> delete(~p"/users/log-out")
+
+      assert conn.status == 409
+      assert get_resp_header(conn, "location") == [~p"/"]
+      assert get_resp_header(conn, "x-inertia-location") == [~p"/"]
+      refute get_session(conn, :user_token)
+      assert %{max_age: 0} = conn.resp_cookies["_nb_pingcrm_web_user_remember_me"]
     end
   end
 end

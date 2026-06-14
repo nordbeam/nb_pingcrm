@@ -36,7 +36,6 @@ export default function ContactsEdit({ onClose }: ContactsEditPageProps) {
   const { props } = usePage<ContactsEditProps>();
 
   const { contact } = props;
-  console.log("contact props:", contact);
   const organizations = props.organizations as unknown as Organization[];
 
   // Collaborative editing indicators
@@ -65,15 +64,7 @@ export default function ContactsEdit({ onClose }: ContactsEditPageProps) {
       ...form.data,
       organization_id: form.data.organization_id === "_none" ? "" : form.data.organization_id,
     };
-    router.put(contacts.update.url(contact.id), data, {
-      preserveScroll: true,
-      onSuccess: () => {
-        if (onClose) {
-          onClose();
-        }
-        router.visit(contacts.index());
-      },
-    });
+    router.put(contacts.update.url(contact.id), data, { preserveScroll: true });
   };
 
   const handleDelete = () => {

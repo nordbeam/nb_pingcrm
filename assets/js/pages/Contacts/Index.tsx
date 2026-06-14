@@ -1,4 +1,4 @@
-import { Head, usePage, ClientModalLink, router } from "@/lib/inertia";
+import { Head, usePage, ClientModalLink, useModalStack } from "@/lib/inertia";
 import type { ContactsIndexProps } from "@/types";
 import type { TableResource } from "@/components/flop";
 import { Table } from "@/components/flop";
@@ -26,6 +26,7 @@ interface Contact {
 
 export default function ContactsIndex() {
   const { props } = usePage<ContactsIndexProps>();
+  const { visitModal } = useModalStack();
   const contacts = props.contacts as TableResource<Contact>;
 
   // Real-time updates
@@ -85,7 +86,7 @@ export default function ContactsIndex() {
               return classes.join(" ");
             }}
             onRowClick={(row) => {
-              router.visit(contactsRoutes.edit(row.id));
+              visitModal(contactsRoutes.edit(row.id));
             }}
             renderCell={(column, value, row) => {
               // Custom rendering for name with delete indicator

@@ -20,8 +20,9 @@ config :nb_pingcrm, NbPingcrm.Repo,
 # you can enable the server option below.
 config :nb_pingcrm, NbPingcrmWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
+  check_origin: false,
   secret_key_base: "h3bNsX7ELMnf9WjLfJu1PUTaF/lmUxhxeKr0ZEFW11CL9jZq5JtU+r+RnZtoRbFW",
-  server: false
+  server: true
 
 # In test we don't send emails
 config :nb_pingcrm, NbPingcrm.Mailer, adapter: Swoosh.Adapters.Test
@@ -43,3 +44,27 @@ config :nb_inertia,
   env: :test,
   ssr: false,
   raise_on_ssr_failure: false
+
+config :wallaby,
+  otp_app: :nb_pingcrm,
+  base_url: "http://localhost:4002",
+  driver: Wallaby.Chrome,
+  screenshot_on_failure: true,
+  chromedriver: [
+    headless: true,
+    capabilities: %{
+      chromeOptions: %{
+        args: [
+          "--no-sandbox",
+          "window-size=1440,1200",
+          "--disable-gpu",
+          "--headless",
+          "--fullscreen",
+          "--disable-dev-shm-usage",
+          "--user-agent=Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"
+        ]
+      }
+    }
+  ]
+
+config :nb_pingcrm, :sandbox, Ecto.Adapters.SQL.Sandbox

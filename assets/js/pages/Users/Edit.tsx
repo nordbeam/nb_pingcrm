@@ -17,7 +17,7 @@ interface UsersEditPageProps {
 export default function UsersEdit({ onClose }: UsersEditPageProps) {
   const { props } = usePage<UsersEditProps>();
 
-  const { user } = props;
+  const { editedUser: user } = props;
 
   const form = useForm(
     {
@@ -31,15 +31,7 @@ export default function UsersEdit({ onClose }: UsersEditPageProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    form.submit({
-      preserveScroll: true,
-      onSuccess: () => {
-        if (onClose) {
-          onClose();
-        }
-        router.visit(users.index());
-      },
-    });
+    form.submit({ preserveScroll: true });
   };
 
   const handleDelete = () => {

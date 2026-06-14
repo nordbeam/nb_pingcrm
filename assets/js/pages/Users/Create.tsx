@@ -25,15 +25,7 @@ export default function UsersCreate({ onClose }: UsersCreateProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    form.submit({
-      preserveScroll: true,
-      onSuccess: () => {
-        if (onClose) {
-          onClose();
-        }
-        router.visit(users.index());
-      },
-    });
+    form.submit({ preserveScroll: true });
   };
 
   const handleCancel = () => {

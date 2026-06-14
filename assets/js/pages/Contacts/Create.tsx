@@ -57,15 +57,7 @@ export default function ContactsCreate({ organizations: propOrganizations, onClo
       ...form.data,
       organization_id: form.data.organization_id === "_none" ? "" : form.data.organization_id,
     };
-    router.post(contacts.create.url(), data, {
-      preserveScroll: true,
-      onSuccess: () => {
-        if (onClose) {
-          onClose();
-        }
-        router.visit(contacts.index());
-      },
-    });
+    router.post(contacts.create.url(), data, { preserveScroll: true });
   };
 
   const handleCancel = () => {

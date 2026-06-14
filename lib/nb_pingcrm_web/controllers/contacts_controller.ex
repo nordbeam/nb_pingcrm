@@ -3,6 +3,7 @@ defmodule NbPingcrmWeb.ContactsController do
   use NbInertia.Controller
 
   alias NbFlop.Serializers.TableResourceSerializer
+  alias NbInertia.Modal.Redirector
   alias NbPingcrm.CRM
   alias NbPingcrm.CRM.Contact
   alias NbPingcrmWeb.InertiaShared.Auth
@@ -60,7 +61,7 @@ defmodule NbPingcrmWeb.ContactsController do
       {:ok, _contact} ->
         conn
         |> put_flash(:success, "Contact created.")
-        |> redirect(to: ~p"/contacts")
+        |> redirect_after_modal_submit(modal_to: ~p"/contacts")
 
       {:error, changeset} ->
         organizations = CRM.list_organizations_for_select(account_id)
@@ -99,7 +100,10 @@ defmodule NbPingcrmWeb.ContactsController do
       {:ok, _contact} ->
         conn
         |> put_flash(:success, "Contact updated.")
-        |> redirect(to: ~p"/contacts/#{id}/edit")
+        |> redirect_after_modal_submit(
+          modal_to: ~p"/contacts",
+          default_to: ~p"/contacts/#{id}/edit"
+        )
 
       {:error, changeset} ->
         organizations = CRM.list_organizations_for_select(account_id)
@@ -121,12 +125,12 @@ defmodule NbPingcrmWeb.ContactsController do
       {:ok, _contact} ->
         conn
         |> put_flash(:success, "Contact deleted.")
-        |> redirect(to: ~p"/contacts")
+        |> redirect_after_modal_submit(modal_to: ~p"/contacts")
 
       {:error, _changeset} ->
         conn
         |> put_flash(:error, "Unable to delete contact.")
-        |> redirect(to: ~p"/contacts")
+        |> redirect_after_modal_submit(modal_to: ~p"/contacts")
     end
   end
 
@@ -138,12 +142,18 @@ defmodule NbPingcrmWeb.ContactsController do
       {:ok, _contact} ->
         conn
         |> put_flash(:success, "Contact restored.")
-        |> redirect(to: ~p"/contacts/#{id}/edit")
+        |> redirect_after_modal_submit(
+          modal_to: ~p"/contacts",
+          default_to: ~p"/contacts/#{id}/edit"
+        )
 
       {:error, _changeset} ->
         conn
         |> put_flash(:error, "Unable to restore contact.")
-        |> redirect(to: ~p"/contacts/#{id}/edit")
+        |> redirect_after_modal_submit(
+          modal_to: ~p"/contacts",
+          default_to: ~p"/contacts/#{id}/edit"
+        )
     end
   end
 
@@ -155,6 +165,17 @@ defmodule NbPingcrmWeb.ContactsController do
         end)
       end)
 
-    Inertia.Controller.assign_errors(conn, errors)
+    NbInertia.CoreController.assign_errors(conn, errors)
+  end
+
+  defp redirect_after_modal_submit(conn, opts) do
+    modal_to = Keyword.fetch!(opts, :modal_to)
+    default_to = Keyword.get(opts, :default_to, modal_to)
+
+    if Redirector.from_modal?(conn) do
+      Redirector.redirect_modal(conn, to: modal_to)
+    else
+      redirect(conn, to: default_to)
+    end
   end
 end

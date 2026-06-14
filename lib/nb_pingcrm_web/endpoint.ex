@@ -1,6 +1,10 @@
 defmodule NbPingcrmWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :nb_pingcrm
 
+  if Application.compile_env(:nb_pingcrm, :sandbox, false) do
+    plug Phoenix.Ecto.SQL.Sandbox
+  end
+
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
@@ -12,8 +16,8 @@ defmodule NbPingcrmWeb.Endpoint do
   ]
 
   socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [session: @session_options]],
-    longpoll: [connect_info: [session: @session_options]]
+    websocket: [connect_info: [:user_agent, session: @session_options]],
+    longpoll: [connect_info: [:user_agent, session: @session_options]]
 
   socket "/socket", NbPingcrmWeb.UserSocket,
     websocket: [connect_info: [session: @session_options]],

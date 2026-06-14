@@ -9,7 +9,7 @@ defmodule NbPingcrm.AccountsFixtures do
   alias NbPingcrm.Accounts
   alias NbPingcrm.Accounts.Scope
 
-  def unique_user_email, do: "user#{System.unique_integer()}@example.com"
+  def unique_user_email, do: "user#{System.unique_integer([:positive, :monotonic])}@example.com"
   def valid_user_password, do: "hello world!"
 
   def valid_user_attributes(attrs \\ %{}) do

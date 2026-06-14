@@ -81,6 +81,7 @@ defmodule NbPingcrm.MixProject do
       {:csv, "~> 3.2"},
       {:deno_rider, "~> 0.2"},
       {:igniter, "~> 0.7"},
+      {:wallaby, "~> 0.30", runtime: false, only: :test},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
@@ -104,6 +105,12 @@ defmodule NbPingcrm.MixProject do
         "nb_vite.deps",
         "nb_vite build",
         "phx.digest"
+      ],
+      "test.e2e": [
+        "ecto.create --quiet",
+        "ecto.migrate --quiet",
+        "assets.build",
+        "test --include feature"
       ],
       precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
     ]

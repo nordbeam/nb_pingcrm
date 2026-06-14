@@ -50,7 +50,10 @@ defmodule NbPingcrmWeb.UserSessionController do
       # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
       conn
       |> put_flash(:error, "Invalid email or password")
-      |> render_inertia(:auth_login, login_page_props(conn, %{"email" => email, "mode" => "password"}))
+      |> render_inertia(
+        :auth_login,
+        login_page_props(conn, %{"email" => email, "mode" => "password"})
+      )
     end
   end
 

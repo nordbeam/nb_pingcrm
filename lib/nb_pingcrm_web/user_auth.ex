@@ -4,6 +4,7 @@ defmodule NbPingcrmWeb.UserAuth do
   """
   use NbPingcrmWeb, :verified_routes
 
+  import NbInertia.CoreController, only: [force_inertia_redirect: 1]
   import Plug.Conn
   import Phoenix.Controller
 
@@ -40,6 +41,7 @@ defmodule NbPingcrmWeb.UserAuth do
 
     conn
     |> create_or_extend_session(user, params)
+    |> force_inertia_redirect()
     |> redirect(to: user_return_to || signed_in_path(conn))
   end
 
@@ -59,6 +61,7 @@ defmodule NbPingcrmWeb.UserAuth do
     conn
     |> renew_session(nil)
     |> delete_resp_cookie(@remember_me_cookie)
+    |> force_inertia_redirect()
     |> redirect(to: ~p"/")
   end
 

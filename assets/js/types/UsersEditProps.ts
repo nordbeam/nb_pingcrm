@@ -6,5 +6,5 @@ import type { AuthProps } from "./AuthProps";
  * Generated from NbSerializer Inertia page declaration
  */
 export interface UsersEditProps extends AuthProps {
-  user: User;
+  editedUser: User;
 }
