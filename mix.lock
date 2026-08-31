@@ -42,7 +42,7 @@
   "nb_serializer": {:git, "https://github.com/nordbeam/nb_serializer.git", "7a8a506541e044c2051831ec705c92cd31f344da", [ref: "7a8a506541e044c2051831ec705c92cd31f344da"]},
   "nb_stack": {:git, "https://github.com/nordbeam/nb_stack.git", "55e922d789d33775a016bc27f37303898e1e3f56", [ref: "55e922d789d33775a016bc27f37303898e1e3f56"]},
   "nb_ts": {:git, "https://github.com/nordbeam/nb_ts.git", "7ce935c272a6eb04f8888ee7eca5a255421eacc4", [ref: "7ce935c272a6eb04f8888ee7eca5a255421eacc4"]},
-  "nb_vite": {:git, "https://github.com/nordbeam/nb_vite.git", "4f0c73d5e796431ba72b9f30614c67d778361aa9", [ref: "4f0c73d5e796431ba72b9f30614c67d778361aa9"]},
+  "nb_vite": {:git, "https://github.com/nordbeam/nb_vite.git", "133bfb7357d7c34a9b05e939ed2c4d7ee71d59fb", [ref: "133bfb7357d7c34a9b05e939ed2c4d7ee71d59fb"]},
   "nimble_options": {:hex, :nimble_options, "1.1.1", "e3a492d54d85fc3fd7c5baf411d9d2852922f66e69476317787a7b2bb000a61b", [:mix], [], "hexpm", "821b2470ca9442c4b6984882fe9bb0389371b8ddec4d45a9504f00a66f650b44"},
   "nimble_pool": {:hex, :nimble_pool, "1.1.0", "bf9c29fbdcba3564a8b800d1eeb5a3c58f36e1e11d7b7fb2e084a643f645f06b", [:mix], [], "hexpm", "af2e4e6b34197db81f7aad230c1118eac993acc0dae6bc83bac0126d4ae0813a"},
   "nodejs": {:hex, :nodejs, "3.1.4", "c165a0e5901966e98d7965a20375a81d84ea89cadcde6c513f7f466e7166b3d3", [:mix], [{:jason, "~> 1.0", [hex: :jason, repo: "hexpm", optional: false]}, {:poolboy, "~> 1.5.1", [hex: :poolboy, repo: "hexpm", optional: false]}, {:ssl_verify_fun, "~> 1.1.7", [hex: :ssl_verify_fun, repo: "hexpm", optional: false]}], "hexpm", "ce69d966a743bdc002892358f653bf4c2074a6e8a4a46f99299d8fd8174d0195"},
