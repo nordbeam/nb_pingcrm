@@ -18,6 +18,28 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.20'
+          otp-version: '29'
+
+      - name: Restore Mix cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-29-1.20-${{ hashFiles('mix.lock') }}
+
+      - name: Install backend dependencies
+        run: mix deps.get
+        working-directory: .
+
+      - name: Compile Phoenix colocated assets
+        run: mix compile --warnings-as-errors
+        working-directory: .
+
       - name: Set up Vite+
         uses: voidzero-dev/setup-vp@v1.18.0
         with:
