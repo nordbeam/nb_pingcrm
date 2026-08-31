@@ -14,8 +14,8 @@ The frontend uses Vite+ and npm 12. Run its checks from `assets/`:
 ```bash
 corepack npm@12.0.2 ci
 vp check
-npm run types:check
-npm run build:budget
+corepack npm@12.0.2 run types:check
+corepack npm@12.0.2 run build:budget
 ```
 
 `build:budget` builds the client and SSR bundles, then checks the initial

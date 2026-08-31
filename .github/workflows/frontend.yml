@@ -52,7 +52,7 @@ jobs:
         run: vp check
 
       - name: Check TypeScript
-        run: npm run types:check
+        run: corepack npm@12.0.2 run types:check
 
       - name: Run frontend tests
         run: vp test --passWithNoTests
@@ -60,4 +60,4 @@ jobs:
           PHOENIX_BYPASS_ENV_CHECK: '1'
 
       - name: Build and enforce bundle budgets
-        run: npm run build:budget
+        run: corepack npm@12.0.2 run build:budget
