@@ -14,16 +14,6 @@ defmodule NbPingcrmWeb.Router do
     plug(:fetch_current_scope_for_user)
     plug(NbInertia.Plug)
     plug(NbInertia.Plugs.ModalHeaders)
-    plug NbInertia.Plug
-    plug NbInertia.Plugs.ModalHeaders
-    plug NbInertia.Plug
-    plug NbInertia.Plugs.ModalHeaders
-    plug NbInertia.Plug
-    plug NbInertia.Plugs.ModalHeaders
-    plug NbInertia.Plug
-    plug NbInertia.Plugs.ModalHeaders
-    plug NbInertia.Plug
-    plug NbInertia.Plugs.ModalHeaders
   end
 
   pipeline :api do

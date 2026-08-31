@@ -7,6 +7,22 @@ To start your Phoenix server:
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
+## Frontend checks
+
+The frontend uses Vite+ and npm 12. Run its checks from `assets/`:
+
+```bash
+corepack npm@12.0.2 ci
+vp check
+npm run types:check
+npm run build:budget
+```
+
+`build:budget` builds the client and SSR bundles, then checks the initial
+Inertia CSS/JavaScript graph and SSR gzip sizes against absolute limits and the
+checked-in baseline. After reviewing an intentional size change, update that
+baseline with `node scripts/check-bundle-size.mjs --update-baseline`.
+
 Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
 
 ## Learn more

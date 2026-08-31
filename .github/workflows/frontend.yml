@@ -1,0 +1,39 @@
+name: Frontend
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  vite-plus:
+    name: Vite+ checks and bundle budgets
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: assets
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Vite+
+        uses: voidzero-dev/setup-vp@v1.18.0
+        with:
+          node-version: '26'
+
+      - name: Install dependencies with npm 12
+        run: corepack npm@12.0.2 ci
+
+      - name: Check formatting and lint
+        run: vp check
+
+      - name: Check TypeScript
+        run: npm run types:check
+
+      - name: Run frontend tests
+        run: vp test --passWithNoTests
+
+      - name: Build and enforce bundle budgets
+        run: npm run build:budget

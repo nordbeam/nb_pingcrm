@@ -10,12 +10,22 @@
     {NbVite.vite_client()}
 
     {NbVite.vite_assets("css/app.css")}
-    {NbVite.vite_assets("js/app.ts")}
+
+    <%!--
+      Inertia pages use the React entry point; all other HTML pages (including
+      LiveViews) keep the Phoenix entry point for forms, channels, and hooks.
+      `live_module` is set by Phoenix.LiveView.Controller, so a LiveView that
+      happens to assign `:page` still gets the LiveView runtime.
+    --%>
+    <%= if assigns[:live_module] || is_nil(assigns[:page]) do %>
+      {NbVite.vite_assets("js/app.ts")}
+    <% else %>
+      {NbVite.react_refresh()}
+      {NbVite.vite_assets("js/app.tsx")}
+    <% end %>
 
     <.inertia_title>{assigns[:page_title]}</.inertia_title>
     <.inertia_head content={@inertia_head} />
-    {NbVite.react_refresh()}
-    {NbVite.vite_assets("js/app.tsx")}
   </head>
   <body>
     {@inner_content}
