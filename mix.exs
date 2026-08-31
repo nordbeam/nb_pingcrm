@@ -10,6 +10,7 @@ defmodule NbPingcrm.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
+      usage_rules: usage_rules(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader]
     ]
@@ -71,31 +72,41 @@ defmodule NbPingcrm.MixProject do
       # nb stack (GitHub commit pins for reproducible integration testing)
       {:nb_stack,
        github: "nordbeam/nb_stack",
-       ref: "f3679534481227306073f3869d23b1202e361ef2",
+       ref: "55e922d789d33775a016bc27f37303898e1e3f56",
        override: true},
       {:nb_vite,
-       github: "nordbeam/nb_vite", ref: "b523cf75f795baae8b34a41cf7650f6ef5d0b8db", override: true},
+       github: "nordbeam/nb_vite", ref: "4f0c73d5e796431ba72b9f30614c67d778361aa9", override: true},
       {:nb_inertia,
        github: "nordbeam/nb_inertia",
-       ref: "1343304ba83583f697f3b7cfde6be423c4d31ed6",
+       ref: "5213e3f82598e8eff7d3777a34de9249a4e97231",
        override: true},
       {:nb_routes,
        github: "nordbeam/nb_routes",
-       ref: "ef01c5632d78755903a7da6fb2ef282c5452d443",
+       ref: "a1f0c254cdc7b197491a966e61113bbf71a6bc4d",
        override: true},
       {:nb_serializer,
        github: "nordbeam/nb_serializer",
-       ref: "7813a785c14d45722e49c616288cf70f41ac3764",
+       ref: "7a8a506541e044c2051831ec705c92cd31f344da",
        override: true},
       {:nb_ts,
-       github: "nordbeam/nb_ts", ref: "ca6207f364ffcb221895ec5db605540f2a5716fe", override: true},
+       github: "nordbeam/nb_ts", ref: "7ce935c272a6eb04f8888ee7eca5a255421eacc4", override: true},
       {:nb_flop,
-       github: "nordbeam/nb_flop", ref: "aaba97d1e76d2c5bf2875adb7833e25bc5ad1b91", override: true},
+       github: "nordbeam/nb_flop", ref: "538a44c99ed2699eff76e0fff1e64b16180299bd", override: true},
       {:flop, "~> 0.28"},
       {:csv, "~> 3.2"},
       {:igniter, "~> 0.8"},
+      {:usage_rules, "~> 1.2", only: :dev, runtime: false},
       {:wallaby, "~> 0.31", runtime: false, only: :test},
       {:credo, "~> 1.7.19", only: [:dev, :test], runtime: false}
+    ]
+  end
+
+  defp usage_rules do
+    [
+      skills: [
+        location: ".agents/skills",
+        package_skills: [~r/^nb_/]
+      ]
     ]
   end
 

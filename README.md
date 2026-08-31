@@ -25,6 +25,20 @@ baseline with `node scripts/check-bundle-size.mjs --update-baseline`.
 
 Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
 
+## Package skills
+
+The Nordbeam packages ship their agent skills through the Elixir
+`usage_rules` convention. Refresh the project-local skills after changing a
+package version:
+
+```bash
+mix usage_rules.sync
+```
+
+The generated, managed skills live in `.agents/skills/`. CI runs
+`mix usage_rules.sync --check` so the committed skills stay aligned with the
+GitHub-pinned package revisions.
+
 ## Learn more
 
 * Official website: https://www.phoenixframework.org/

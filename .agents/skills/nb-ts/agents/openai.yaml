@@ -1,0 +1,4 @@
+interface:
+  display_name: "nb TypeScript"
+  short_description: "Generate typed front-end contracts from Elixir"
+  default_prompt: "Use $nb-ts to configure, validate, or troubleshoot version-aware TypeScript generation."

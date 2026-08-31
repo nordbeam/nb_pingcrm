@@ -36,6 +36,10 @@ jobs:
         run: mix deps.get
         working-directory: .
 
+      - name: Verify packaged agent skills
+        run: mix usage_rules.sync --check
+        working-directory: .
+
       - name: Compile Phoenix colocated assets
         run: mix compile --warnings-as-errors
         working-directory: .

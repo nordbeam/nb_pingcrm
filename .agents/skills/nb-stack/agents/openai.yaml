@@ -1,0 +1,4 @@
+interface:
+  display_name: "nb Stack"
+  short_description: "Install the nb Phoenix Vite+ stack"
+  default_prompt: "Use $nb-stack to install or troubleshoot a version-aware NbStack and Vite+ setup in my Phoenix app."
