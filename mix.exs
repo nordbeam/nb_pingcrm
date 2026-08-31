@@ -77,7 +77,7 @@ defmodule NbPingcrm.MixProject do
        github: "nordbeam/nb_vite", ref: "b523cf75f795baae8b34a41cf7650f6ef5d0b8db", override: true},
       {:nb_inertia,
        github: "nordbeam/nb_inertia",
-       ref: "e2ca723ed719258586d0abc299beaa4742c4afa1",
+       ref: "1343304ba83583f697f3b7cfde6be423c4d31ed6",
        override: true},
       {:nb_routes,
        github: "nordbeam/nb_routes",
