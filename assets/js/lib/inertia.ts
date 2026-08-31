@@ -82,8 +82,8 @@ export type {
   SchemaRuntimePhase,
 } from '@nordbeam/nb-inertia/shared/schemaRuntime';
 export { Link } from '@inertiajs/react';
-export { useForm } from '@nordbeam/nb-inertia/react/useForm';
-export { useHttp } from '@nordbeam/nb-inertia/react/useHttp';
+export { useForm, useFormWithPrecognition } from '@nordbeam/nb-inertia/react/useForm';
+export { useHttp, useHttpWithPrecognition } from '@nordbeam/nb-inertia/react/useHttp';
 export { useRoutes } from '@nordbeam/nb-inertia/react/useRoutes';
 export { usePage } from '@nordbeam/nb-inertia/react/usePage';
 export { Head } from '@nordbeam/nb-inertia/react/Head';

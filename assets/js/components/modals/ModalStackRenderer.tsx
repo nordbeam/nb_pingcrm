@@ -119,6 +119,7 @@ function AnimatedModal({
           url={modal.url}
           baseUrl={modal.baseUrl}
           returnUrl={modal.returnUrl}
+          pageMetadata={modal.pageMetadata}
         >
           {modal.loading ? (
             LoadingComponent ? (

@@ -1,5 +1,7 @@
-import ReactDOMServer from 'react-dom/server';
-import { createInertiaApp } from '@/lib/inertia';
+import ReactDOMServer from 'react-dom/server.browser';
+import { createInertiaApp, InitialModalHandler, ModalStackProvider } from '@/lib/inertia';
+import { ModalStackRenderer } from '@/components/modals';
+import type { Page } from '@inertiajs/core';
 import type { ComponentType } from 'react';
 
 type PageModule = {
@@ -15,6 +17,28 @@ type PageModule = {
 // Lazy loading - create import functions once at module level
 const pages = import.meta.glob<PageModule>('./pages/**/*.tsx');
 
+const resolvePageComponent = async (name: string, page?: Page) => {
+  const pagePath = `./pages/${name}.tsx`;
+
+  if (!pages[pagePath]) {
+    const availablePages = Object.keys(pages)
+      .map((path) => path.replace('./pages/', '').replace('.tsx', ''))
+      .sort();
+
+    const pageUrl = page?.url ? ` at ${page.url}` : '';
+
+    throw new Error(
+      `SSR page not found: ${name}${pageUrl}\n` +
+        `Expected: assets/js/pages/${name}.tsx\n` +
+        `Available pages (${availablePages.length}):\n` +
+        availablePages.map((path) => `  - ${path}`).join('\n'),
+    );
+  }
+
+  const pageModule = await pages[pagePath]();
+  return pageModule.default;
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function render(page: any) {
   if (page?.component === '__nb_inertia_healthcheck__') {
@@ -24,35 +48,17 @@ export async function render(page: any) {
   return await createInertiaApp({
     page,
     render: ReactDOMServer.renderToString,
-    // Inertia v3: resolve receives (name, props)
-    resolve: async (name, _props) => {
-      const pagePath = `./pages/${name}.tsx`;
-
-      if (!pages[pagePath]) {
-        // List available pages for debugging
-        const availablePages = Object.keys(pages)
-          .map((p) => p.replace('./pages/', '').replace('.tsx', ''))
-          .sort();
-
-        throw new Error(
-          `❌ SSR Page Not Found\n\n` +
-            `Component: ${name}\n` +
-            `Expected file: assets/js/pages/${name}.tsx\n\n` +
-            `This page file doesn't exist or wasn't found by Vite's glob.\n\n` +
-            `Common causes:\n` +
-            `• The file hasn't been created yet\n` +
-            `• The file name doesn't match the component name\n` +
-            `• The file has the wrong extension\n` +
-            `• The component name in your controller doesn't match the file path\n\n` +
-            `Available pages (${availablePages.length}):\n` +
-            availablePages.map((p) => `  - ${p}`).join('\n'),
-        );
-      }
-
-      // Dynamically import only the requested page
-      const pageModule = await pages[pagePath]();
-      return pageModule.default;
-    },
-    setup: ({ App, props }) => <App {...props} />,
+    serverHead: true,
+    resolve: resolvePageComponent,
+    setup: ({ App, props }) => (
+      <ModalStackProvider resolveComponent={resolvePageComponent}>
+        <App {...props} />
+        <InitialModalHandler
+          resolveComponent={resolvePageComponent}
+          initialPage={props.initialPage}
+        />
+        <ModalStackRenderer />
+      </ModalStackProvider>
+    ),
   });
 }

@@ -37,7 +37,7 @@
   "mimerl": {:hex, :mimerl, "1.5.0", "f35aca6f23242339b3666e0ac0702379e362b469d0aea167f6cc713547e777ed", [:rebar3], [], "hexpm", "db648ce065bae14ea84ca8b5dd123f42f49417cef693541110bf6f9e9be9ecc4"},
   "mint": {:hex, :mint, "1.9.3", "3337184d69179695c7a9f1714d92c11e629d36c8c037a21cf490131d3d150554", [:mix], [{:castore, "~> 0.1.0 or ~> 1.0", [hex: :castore, repo: "hexpm", optional: true]}, {:hpax, "~> 0.1.1 or ~> 0.2.0 or ~> 1.0", [hex: :hpax, repo: "hexpm", optional: false]}], "hexpm", "5f7c9342480c069dbbc4eeac3490303c9e01870ff01a7f1d29b6107054fc1e74"},
   "nb_flop": {:git, "https://github.com/nordbeam/nb_flop.git", "aaba97d1e76d2c5bf2875adb7833e25bc5ad1b91", [ref: "aaba97d1e76d2c5bf2875adb7833e25bc5ad1b91"]},
-  "nb_inertia": {:git, "https://github.com/nordbeam/nb_inertia.git", "91d0ac3554d1e80781001766f4bfae79f81f274e", [ref: "91d0ac3554d1e80781001766f4bfae79f81f274e"]},
+  "nb_inertia": {:git, "https://github.com/nordbeam/nb_inertia.git", "cc636498f10324f8c4e85ec4a909ef4a190164fe", [ref: "cc636498f10324f8c4e85ec4a909ef4a190164fe"]},
   "nb_routes": {:git, "https://github.com/nordbeam/nb_routes.git", "ef01c5632d78755903a7da6fb2ef282c5452d443", [ref: "ef01c5632d78755903a7da6fb2ef282c5452d443"]},
   "nb_serializer": {:git, "https://github.com/nordbeam/nb_serializer.git", "16edc6ddfd8e819557e92ab7537f3f8272aab12a", [ref: "16edc6ddfd8e819557e92ab7537f3f8272aab12a"]},
   "nb_stack": {:git, "https://github.com/nordbeam/nb_stack.git", "f3679534481227306073f3869d23b1202e361ef2", [ref: "f3679534481227306073f3869d23b1202e361ef2"]},

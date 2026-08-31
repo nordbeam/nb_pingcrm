@@ -19,7 +19,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@inertiajs/react": "^3.7.0",
-    "@nordbeam/nb-inertia": "git+https://github.com/nordbeam/nb_inertia.git#91d0ac3554d1e80781001766f4bfae79f81f274e",
+    "@nordbeam/nb-inertia": "git+https://github.com/nordbeam/nb_inertia.git#cc636498f10324f8c4e85ec4a909ef4a190164fe",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",
