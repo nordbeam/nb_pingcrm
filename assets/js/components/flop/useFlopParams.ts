@@ -30,13 +30,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import type {
-  FlopParams,
-  FlopMeta,
-  FlopOperator,
-  SortDirection,
-  PaginationMode,
-} from './types';
+import type { FlopParams, FlopMeta, FlopOperator, SortDirection, PaginationMode } from './types';
 
 export interface UseFlopParamsOptions {
   /**
@@ -117,7 +111,7 @@ export interface FlopToQueryParamsOptions {
  */
 export function flopToQueryParams(
   params: FlopParams,
-  options: FlopToQueryParamsOptions = {}
+  options: FlopToQueryParamsOptions = {},
 ): Record<string, string | string[]> {
   const {
     paginationType = 'page',
@@ -158,7 +152,11 @@ export function flopToQueryParams(
     }
     // Skip page_size if defaultPageSize is undefined (always skip) or matches the default
     // Only include if defaultPageSize is specified AND current value differs
-    if (defaultPageSize !== undefined && params.pageSize != null && params.pageSize !== defaultPageSize) {
+    if (
+      defaultPageSize !== undefined &&
+      params.pageSize != null &&
+      params.pageSize !== defaultPageSize
+    ) {
       query['page_size'] = String(params.pageSize);
     }
   } else if (paginationType === 'offset') {
@@ -178,7 +176,12 @@ export function flopToQueryParams(
     params.filters.forEach((filter, index) => {
       query[`filters[${index}][field]`] = filter.field;
       query[`filters[${index}][op]`] = filter.op;
-      query[`filters[${index}][value]`] = String(filter.value);
+      // Handle array values for operators like 'in' - use bracket notation
+      if (Array.isArray(filter.value)) {
+        query[`filters[${index}][value][]`] = filter.value.map(String);
+      } else {
+        query[`filters[${index}][value]`] = String(filter.value);
+      }
     });
   }
 
@@ -190,7 +193,7 @@ export function flopToQueryParams(
  */
 export function useFlopParams(
   meta: FlopMeta | null,
-  options: UseFlopParamsOptions = {}
+  options: UseFlopParamsOptions = {},
 ): UseFlopParamsReturn {
   const { onParamsChange, initialParams = {} } = options;
 
@@ -212,7 +215,7 @@ export function useFlopParams(
         return next;
       });
     },
-    [onParamsChange]
+    [onParamsChange],
   );
 
   // --- Sorting Actions ---
@@ -230,7 +233,7 @@ export function useFlopParams(
         before: null,
       }));
     },
-    [updateParams, paginationMode]
+    [updateParams, paginationMode],
   );
 
   const toggleSort = useCallback(
@@ -249,7 +252,7 @@ export function useFlopParams(
 
       setSort(field, newDirection);
     },
-    [params.orderBy, params.orderDirections, setSort]
+    [params.orderBy, params.orderDirections, setSort],
   );
 
   const clearSort = useCallback(() => {
@@ -270,7 +273,7 @@ export function useFlopParams(
       if (dir?.startsWith('desc')) return 'desc';
       return null;
     },
-    [params.orderBy, params.orderDirections]
+    [params.orderBy, params.orderDirections],
   );
 
   // --- Filtering Actions ---
@@ -278,9 +281,7 @@ export function useFlopParams(
   const setFilter = useCallback(
     (field: string, op: FlopOperator, value: unknown) => {
       updateParams((prev) => {
-        const filters =
-          prev.filters?.filter((f) => !(f.field === field && f.op === op)) ??
-          [];
+        const filters = prev.filters?.filter((f) => !(f.field === field && f.op === op)) ?? [];
 
         return {
           ...prev,
@@ -293,7 +294,7 @@ export function useFlopParams(
         };
       });
     },
-    [updateParams, paginationMode]
+    [updateParams, paginationMode],
   );
 
   const removeFilter = useCallback(
@@ -301,7 +302,7 @@ export function useFlopParams(
       updateParams((prev) => ({
         ...prev,
         filters: prev.filters?.filter(
-          (f) => f.field !== field || (op !== undefined && f.op !== op)
+          (f) => f.field !== field || (op !== undefined && f.op !== op),
         ),
         // Reset pagination when filters change
         page: paginationMode === 'page' ? 1 : prev.page,
@@ -310,7 +311,7 @@ export function useFlopParams(
         before: null,
       }));
     },
-    [updateParams, paginationMode]
+    [updateParams, paginationMode],
   );
 
   const clearFilters = useCallback(() => {
@@ -327,11 +328,11 @@ export function useFlopParams(
   const getFilterValue = useCallback(
     (field: string, op?: FlopOperator): unknown => {
       const filter = params.filters?.find(
-        (f) => f.field === field && (op === undefined || f.op === op)
+        (f) => f.field === field && (op === undefined || f.op === op),
       );
       return filter?.value;
     },
-    [params.filters]
+    [params.filters],
   );
 
   // --- Page-based Pagination Actions ---
@@ -340,7 +341,7 @@ export function useFlopParams(
     (page: number) => {
       updateParams((prev) => ({ ...prev, page }));
     },
-    [updateParams]
+    [updateParams],
   );
 
   const nextPage = useCallback(() => {
@@ -363,7 +364,7 @@ export function useFlopParams(
         page: 1, // Reset to first page
       }));
     },
-    [updateParams]
+    [updateParams],
   );
 
   // --- Offset-based Pagination Actions ---
@@ -372,7 +373,7 @@ export function useFlopParams(
     (offset: number) => {
       updateParams((prev) => ({ ...prev, offset }));
     },
-    [updateParams]
+    [updateParams],
   );
 
   // --- Cursor-based Pagination Actions ---
@@ -403,7 +404,7 @@ export function useFlopParams(
     (newParams: Partial<FlopParams>) => {
       updateParams((prev) => ({ ...prev, ...newParams }));
     },
-    [updateParams]
+    [updateParams],
   );
 
   const resetParams = useCallback(() => {

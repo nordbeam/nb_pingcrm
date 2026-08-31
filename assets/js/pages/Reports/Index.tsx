@@ -1,5 +1,4 @@
-import { usePage, Head, Link } from "@/lib/inertia";
-import type { ReportsIndexProps } from "@/types";
+import { usePageProps, Head, Link } from '@/lib/inertia';
 import {
   Users,
   Building2,
@@ -11,21 +10,21 @@ import {
   BarChart3,
   ArrowUpRight,
   type LucideIcon,
-} from "lucide-react";
+} from 'lucide-react';
 
 // Country code to name mapping
 const COUNTRY_NAMES: Record<string, string> = {
-  US: "United States",
-  CA: "Canada",
-  MX: "Mexico",
-  GB: "United Kingdom",
-  DE: "Germany",
-  FR: "France",
-  AU: "Australia",
+  US: 'United States',
+  CA: 'Canada',
+  MX: 'Mexico',
+  GB: 'United Kingdom',
+  DE: 'Germany',
+  FR: 'France',
+  AU: 'Australia',
 };
 
 export default function ReportsIndex() {
-  const { props } = usePage<ReportsIndexProps>();
+  const props = usePageProps('Reports/Index');
   const {
     totals,
     contactsByOrganization,
@@ -64,12 +63,7 @@ export default function ReportsIndex() {
               icon={Building2}
               href="/organizations"
             />
-            <StatCard
-              title="Team Members"
-              value={totals?.users ?? 0}
-              icon={User}
-              href="/users"
-            />
+            <StatCard title="Team Members" value={totals?.users ?? 0} icon={User} href="/users" />
             <StatCard
               title="Trashed Items"
               value={(trashed?.contacts ?? 0) + (trashed?.organizations ?? 0)}
@@ -90,8 +84,9 @@ export default function ReportsIndex() {
                     Last {recentActivity.days} days activity
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {recentActivity.contacts} new contact{recentActivity.contacts !== 1 ? "s" : ""},{" "}
-                    {recentActivity.organizations} new organization{recentActivity.organizations !== 1 ? "s" : ""}
+                    {recentActivity.contacts} new contact{recentActivity.contacts !== 1 ? 's' : ''},{' '}
+                    {recentActivity.organizations} new organization
+                    {recentActivity.organizations !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
@@ -105,9 +100,7 @@ export default function ReportsIndex() {
               <div className="flex items-center justify-between border-b border-border px-5 py-4">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-sm font-medium text-foreground">
-                    Contacts by Organization
-                  </h2>
+                  <h2 className="text-sm font-medium text-foreground">Contacts by Organization</h2>
                 </div>
                 <Link
                   href="/contacts"
@@ -144,9 +137,7 @@ export default function ReportsIndex() {
               <div className="flex items-center justify-between border-b border-border px-5 py-4">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-sm font-medium text-foreground">
-                    Contacts Over Time
-                  </h2>
+                  <h2 className="text-sm font-medium text-foreground">Contacts Over Time</h2>
                 </div>
               </div>
               <div className="p-5">
@@ -176,9 +167,7 @@ export default function ReportsIndex() {
               <div className="flex items-center justify-between border-b border-border px-5 py-4">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-sm font-medium text-foreground">
-                    Contacts by Country
-                  </h2>
+                  <h2 className="text-sm font-medium text-foreground">Contacts by Country</h2>
                 </div>
               </div>
               <div className="p-5">
@@ -208,9 +197,7 @@ export default function ReportsIndex() {
               <div className="flex items-center justify-between border-b border-border px-5 py-4">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-sm font-medium text-foreground">
-                    Organizations by Country
-                  </h2>
+                  <h2 className="text-sm font-medium text-foreground">Organizations by Country</h2>
                 </div>
               </div>
               <div className="p-5">
@@ -249,9 +236,10 @@ export default function ReportsIndex() {
                       Trashed Items
                     </p>
                     <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
-                      You have {trashed.contacts} trashed contact{trashed.contacts !== 1 ? "s" : ""} and{" "}
-                      {trashed.organizations} trashed organization{trashed.organizations !== 1 ? "s" : ""}.
-                      You can restore them from the respective lists by filtering for trashed items.
+                      You have {trashed.contacts} trashed contact{trashed.contacts !== 1 ? 's' : ''}{' '}
+                      and {trashed.organizations} trashed organization
+                      {trashed.organizations !== 1 ? 's' : ''}. You can restore them from the
+                      respective lists by filtering for trashed items.
                     </p>
                     <div className="mt-3 flex gap-3">
                       {trashed.contacts > 0 && (
@@ -302,9 +290,7 @@ function StatCard({ title, value, icon: Icon, href, description }: StatCardProps
           <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">
             {value.toLocaleString()}
           </p>
-          {description && (
-            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-          )}
+          {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
         </div>
         <div className="rounded-md bg-primary/5 p-2">
           <Icon className="h-4 w-4 text-primary" />

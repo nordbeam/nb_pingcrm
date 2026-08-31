@@ -52,18 +52,12 @@ export function SortableColumnHeader({
       type="button"
       onClick={handleClick}
       className={cn(
-        "inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider transition-colors",
-        "hover:text-foreground focus:outline-none focus-visible:text-foreground",
-        isActive ? "text-foreground" : "text-muted-foreground",
-        className
+        'inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider transition-colors',
+        'hover:text-foreground focus:outline-none focus-visible:text-foreground',
+        isActive ? 'text-foreground' : 'text-muted-foreground',
+        className,
       )}
-      aria-sort={
-        direction === 'asc'
-          ? 'ascending'
-          : direction === 'desc'
-            ? 'descending'
-            : 'none'
-      }
+      aria-sort={direction === 'asc' ? 'ascending' : direction === 'desc' ? 'descending' : 'none'}
     >
       <span>{children}</span>
       {direction === 'asc' ? (

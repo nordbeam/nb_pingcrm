@@ -1,6 +1,5 @@
 defmodule NbPingcrmWeb.ReportsController do
   use NbPingcrmWeb, :controller
-  use NbInertia.Controller
 
   alias NbPingcrm.{Accounts, CRM}
   alias NbPingcrmWeb.InertiaShared.Auth

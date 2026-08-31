@@ -1,33 +1,31 @@
-import { useState } from "react";
-import { Head, Link, useForm, usePage } from "@/lib/inertia";
-import type { AuthLoginProps } from "@/types";
-import { Logo } from "@/components/Logo";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { user_sessions } from "@/routes";
-import { Loader2, Mail, Lock, Sparkles } from "lucide-react";
+import { useState } from 'react';
+import { Head, Link, useForm, usePageProps } from '@/lib/inertia';
+import { Logo } from '@/components/Logo';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { user_sessions } from '@/routes';
+import { Loader2, Mail, Lock, Sparkles } from 'lucide-react';
 
 export default function Login() {
-  const { props } = usePage<AuthLoginProps>();
-  const { flash, email, sudoMode, mode } = props;
-  const [loginMethod, setLoginMethod] = useState<"password" | "magic">(
-    mode === "magic" ? "magic" : "password"
+  const { flash, email, sudoMode, mode } = usePageProps('Auth/Login');
+  const [loginMethod, setLoginMethod] = useState<'password' | 'magic'>(
+    mode === 'magic' ? 'magic' : 'password',
   );
 
   const passwordForm = useForm(
     {
-      email: email ?? "",
-      password: "",
+      email: email ?? '',
+      password: '',
       remember_me: false,
     },
-    user_sessions.create()
+    user_sessions.create(),
   );
 
   const magicForm = useForm(
     {
-      email: email ?? "",
+      email: email ?? '',
     },
-    user_sessions.create()
+    user_sessions.create(),
   );
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -36,11 +34,11 @@ export default function Login() {
       user: {
         email: data.email,
         password: data.password,
-        remember_me: data.remember_me ? "true" : "false",
+        remember_me: data.remember_me ? 'true' : 'false',
       },
     }));
     passwordForm.submit({
-      onFinish: () => passwordForm.reset("password"),
+      onFinish: () => passwordForm.reset('password'),
     });
   };
 
@@ -85,9 +83,7 @@ export default function Login() {
               </p>
             </div>
 
-            <div className="text-sm text-white/50">
-              Trusted by growing teams worldwide
-            </div>
+            <div className="text-sm text-white/50">Trusted by growing teams worldwide</div>
           </div>
         </div>
 
@@ -106,10 +102,10 @@ export default function Login() {
               <h2 className="text-xl font-semibold text-foreground">Log in</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {sudoMode ? (
-                  "You need to reauthenticate to continue."
+                  'You need to reauthenticate to continue.'
                 ) : (
                   <>
-                    Don't have an account?{" "}
+                    Don't have an account?{' '}
                     <Link
                       href="/users/register"
                       className="font-medium text-primary hover:text-primary/80 transition-colors"
@@ -142,11 +138,11 @@ export default function Login() {
             <div className="flex bg-secondary p-1 rounded-lg mb-6">
               <button
                 type="button"
-                onClick={() => setLoginMethod("password")}
+                onClick={() => setLoginMethod('password')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
-                  loginMethod === "password"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                  loginMethod === 'password'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Lock className="h-4 w-4" />
@@ -154,11 +150,11 @@ export default function Login() {
               </button>
               <button
                 type="button"
-                onClick={() => setLoginMethod("magic")}
+                onClick={() => setLoginMethod('magic')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
-                  loginMethod === "magic"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                  loginMethod === 'magic'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Sparkles className="h-4 w-4" />
@@ -167,7 +163,7 @@ export default function Login() {
             </div>
 
             {/* Password Login Form */}
-            {loginMethod === "password" && (
+            {loginMethod === 'password' && (
               <form onSubmit={handlePasswordSubmit} className="space-y-4">
                 <div>
                   <label
@@ -184,16 +180,14 @@ export default function Login() {
                       autoComplete="email"
                       required
                       value={passwordForm.data.email}
-                      onChange={(e) => passwordForm.setData("email", e.target.value)}
+                      onChange={(e) => passwordForm.setData('email', e.target.value)}
                       readOnly={sudoMode}
                       className="pl-9"
                       placeholder="you@example.com"
                     />
                   </div>
                   {passwordForm.errors.email && (
-                    <p className="mt-1.5 text-sm text-destructive">
-                      {passwordForm.errors.email}
-                    </p>
+                    <p className="mt-1.5 text-sm text-destructive">{passwordForm.errors.email}</p>
                   )}
                 </div>
 
@@ -212,7 +206,7 @@ export default function Login() {
                       autoComplete="current-password"
                       required
                       value={passwordForm.data.password}
-                      onChange={(e) => passwordForm.setData("password", e.target.value)}
+                      onChange={(e) => passwordForm.setData('password', e.target.value)}
                       className="pl-9"
                       placeholder="Enter your password"
                     />
@@ -229,9 +223,7 @@ export default function Login() {
                     id="remember"
                     type="checkbox"
                     checked={passwordForm.data.remember_me}
-                    onChange={(e) =>
-                      passwordForm.setData("remember_me", e.target.checked)
-                    }
+                    onChange={(e) => passwordForm.setData('remember_me', e.target.checked)}
                     className="h-4 w-4 rounded border-border text-primary focus:ring-primary/20"
                   />
                   <label htmlFor="remember" className="ml-2 text-sm text-muted-foreground">
@@ -239,25 +231,21 @@ export default function Login() {
                   </label>
                 </div>
 
-                <Button
-                  type="submit"
-                  disabled={passwordForm.processing}
-                  className="w-full"
-                >
+                <Button type="submit" disabled={passwordForm.processing} className="w-full">
                   {passwordForm.processing ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Signing in...
                     </>
                   ) : (
-                    "Sign in"
+                    'Sign in'
                   )}
                 </Button>
               </form>
             )}
 
             {/* Magic Link Form */}
-            {loginMethod === "magic" && (
+            {loginMethod === 'magic' && (
               <form onSubmit={handleMagicSubmit} className="space-y-4">
                 <div>
                   <label
@@ -274,16 +262,14 @@ export default function Login() {
                       autoComplete="email"
                       required
                       value={magicForm.data.email}
-                      onChange={(e) => magicForm.setData("email", e.target.value)}
+                      onChange={(e) => magicForm.setData('email', e.target.value)}
                       readOnly={sudoMode}
                       className="pl-9"
                       placeholder="you@example.com"
                     />
                   </div>
                   {magicForm.errors.email && (
-                    <p className="mt-1.5 text-sm text-destructive">
-                      {magicForm.errors.email}
-                    </p>
+                    <p className="mt-1.5 text-sm text-destructive">{magicForm.errors.email}</p>
                   )}
                 </div>
 
@@ -291,18 +277,14 @@ export default function Login() {
                   We'll send you a secure link to sign in without a password.
                 </p>
 
-                <Button
-                  type="submit"
-                  disabled={magicForm.processing}
-                  className="w-full"
-                >
+                <Button type="submit" disabled={magicForm.processing} className="w-full">
                   {magicForm.processing ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Sending link...
                     </>
                   ) : (
-                    "Send magic link"
+                    'Send magic link'
                   )}
                 </Button>
               </form>

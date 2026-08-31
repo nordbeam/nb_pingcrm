@@ -1,5 +1,5 @@
-import type { FlopParams } from "./FlopParamsSerializer";
-import type { FilterableField } from "./FilterableFieldSerializer";
+import type { FlopParams } from './FlopParamsSerializer';
+import type { FilterableField } from './FilterableFieldSerializer';
 export interface FlopMeta {
   currentOffset: number | null;
   currentPage: number | null;
@@ -18,3 +18,32 @@ export interface FlopMeta {
   totalCount: number | null;
   totalPages: number | null;
 }
+
+import { z } from 'zod';
+import { FilterableFieldSchema } from './FilterableFieldSerializer';
+import { FlopParamsSchema } from './FlopParamsSerializer';
+
+export const FlopMetaSchema = z.object({
+  currentOffset: z.number().nullable(),
+  currentPage: z.number().nullable(),
+  endCursor: z.string().nullable(),
+  filterableFields: z.array(FilterableFieldSchema).optional(),
+  flop: FlopParamsSchema,
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean(),
+  nextOffset: z.number().nullable(),
+  nextPage: z.number().nullable(),
+  pageSize: z.number().nullable(),
+  previousOffset: z.number().nullable(),
+  previousPage: z.number().nullable(),
+  sortableFields: z.array(z.string()).optional(),
+  startCursor: z.string().nullable(),
+  totalCount: z.number().nullable(),
+  totalPages: z.number().nullable(),
+});
+
+/** Wire/input representation accepted by FlopMetaSchema. */
+export type FlopMetaWire = z.input<typeof FlopMetaSchema>;
+
+/** Runtime/output representation returned by FlopMetaSchema. */
+export type FlopMetaRuntime = z.output<typeof FlopMetaSchema>;

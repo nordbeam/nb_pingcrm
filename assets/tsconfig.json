@@ -1,28 +1,40 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
+    "allowImportingTsExtensions": true,
+    "allowJs": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": true,
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
-    "strict": true,
+    "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "allowJs": true,
-    "forceConsistentCasingInFileNames": true,
-    "esModuleInterop": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["./js/*"]
-    }
+      "@/*": ["./js/*"],
+      "@/types": ["./js/types/index"],
+      "@/types/*": ["./js/types/*"]
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2020",
+    "types": ["vite/client"],
+    "useDefineForClassFields": true
   },
-  "include": ["js/**/*.ts", "js/**/*.tsx", "js/**/*.js", "js/**/*.jsx"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "include": [
+    "js/app.tsx",
+    "js/env.d.ts",
+    "js/lib/**/*.ts",
+    "js/pages/**/*.tsx",
+    "js/routes/**/*.ts",
+    "js/ssr.tsx",
+    "js/ssr_prod.tsx",
+    "js/types/**/*",
+    "assets/js/types/**/*"
+  ]
 }

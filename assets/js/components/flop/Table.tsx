@@ -7,7 +7,7 @@
  */
 
 import * as React from 'react';
-import { useState, useMemo, useCallback } from 'react';
+import { useState } from 'react';
 import { router } from '@/lib/inertia';
 import { cn } from '@/lib/utils';
 import type {
@@ -19,14 +19,22 @@ import type {
   Selection,
 } from './tableTypes';
 import { Pagination } from './Pagination';
-import { SearchInput } from '@/components/SearchInput';
+import { SearchInput } from './SearchInput';
 import { FilterBar } from './FilterBar';
+import { ConfirmDialog, useConfirmDialog } from './ConfirmDialog';
+
+export interface ActionResult {
+  success: boolean;
+  message?: string;
+  redirect?: string;
+  count?: number;
+}
 
 export interface TableProps<T = Record<string, unknown>> {
   /** The table resource from backend */
   resource: TableResource<T>;
-  /** Base URL for navigation (e.g., "/users") */
-  baseUrl: string;
+  /** Base URL for navigation (e.g., "/users") — used with Inertia transport */
+  baseUrl?: string;
   /** Custom row renderer (optional - uses columns from resource by default) */
   renderRow?: (row: T, columns: TableColumn[]) => React.ReactNode;
   /** Custom cell renderer for specific column types */
@@ -45,9 +53,20 @@ export interface TableProps<T = Record<string, unknown>> {
   footer?: React.ReactNode;
   /** Class name for wrapper */
   className?: string;
+
+  // -- Transport callbacks (when provided, skip Inertia router) --
+
+  /** Navigation callback — called instead of router.visit() when provided */
+  onNavigate?: (params: Record<string, unknown>) => void;
+  /** Row action callback — called instead of fetch('/nb-flop/action') when provided */
+  onAction?: (actionName: string, rowId: string | number) => Promise<ActionResult>;
+  /** Bulk action callback — called instead of fetch('/nb-flop/bulk-action') when provided */
+  onBulkAction?: (actionName: string, selection: Selection) => Promise<ActionResult>;
+  /** Refresh callback — called instead of router.reload() when provided */
+  onRefresh?: () => void;
 }
 
-export function Table<T extends Record<string, unknown> = Record<string, unknown>>({
+export function Table<T extends object = Record<string, unknown>>({
   resource,
   baseUrl,
   renderRow,
@@ -59,166 +78,140 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
   header,
   footer,
   className,
+  onNavigate,
+  onAction,
+  onBulkAction,
+  onRefresh,
 }: TableProps<T>) {
   const [search, setSearch] = useState(resource.state.search || '');
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
   const [selectionMode, setSelectionMode] = useState<'explicit' | 'all' | 'all_except'>('explicit');
+  const { confirm, dialogProps } = useConfirmDialog();
 
   // Build query params for navigation
-  const buildQuery = useCallback(
-    (overrides: Record<string, unknown> = {}) => {
-      const query: Record<string, unknown> = {
-        ...preserveQuery,
-      };
+  const buildQuery = (overrides: Record<string, unknown> = {}) => {
+    const query: Record<string, unknown> = {
+      ...preserveQuery,
+    };
 
-      // Page
-      if (resource.state.page > 1 || overrides.page) {
-        query.page = overrides.page ?? resource.state.page;
+    // Page
+    if (resource.state.page > 1 || overrides.page) {
+      query.page = overrides.page ?? resource.state.page;
+    }
+
+    // Per page
+    const perPage = overrides.per_page ?? resource.state.perPage;
+    if (perPage && perPage !== resource.perPageOptions?.[0]) {
+      query.per_page = perPage;
+    }
+
+    // Search
+    const searchValue = overrides.search !== undefined ? overrides.search : search;
+    if (searchValue) {
+      query.search = searchValue;
+    }
+
+    // Sort
+    if (resource.state.sort || overrides.sort) {
+      const sort = (overrides.sort as { field: string; direction: string }) ?? resource.state.sort;
+      if (sort) {
+        query.order_by = sort.field;
+        query.order_direction = sort.direction;
       }
+    }
 
-      // Per page - preserve current value or use override
-      const perPage = overrides.per_page ?? resource.state.perPage;
-      if (perPage && perPage !== resource.perPageOptions?.[0]) {
-        query.per_page = perPage;
-      }
-
-      // Search
-      const searchValue = overrides.search !== undefined ? overrides.search : search;
-      if (searchValue) {
-        query.search = searchValue;
-      }
-
-      // Sort
-      if (resource.state.sort || overrides.sort) {
-        const sort = (overrides.sort as { field: string; direction: string }) ?? resource.state.sort;
-        if (sort) {
-          query.order_by = sort.field;
-          query.order_direction = sort.direction;
-        }
-      }
-
-      // Filters
-      const filters = (overrides.filters ?? resource.state.filters) as TableFlopFilter[];
-      if (filters?.length > 0) {
-        filters.forEach((f, i) => {
-          query[`filters[${i}][field]`] = f.field;
-          query[`filters[${i}][op]`] = f.op;
-          query[`filters[${i}][value]`] = f.value;
-        });
-      }
-
-      // Clean undefined values
-      Object.keys(query).forEach((key) => {
-        if (query[key] === undefined || query[key] === null || query[key] === '') {
-          delete query[key];
-        }
+    // Filters
+    const filters = (overrides.filters ?? resource.state.filters) as TableFlopFilter[];
+    if (filters?.length > 0) {
+      filters.forEach((f, i) => {
+        query[`filters[${i}][field]`] = f.field;
+        query[`filters[${i}][op]`] = f.op;
+        query[`filters[${i}][value]`] = f.value;
       });
+    }
 
-      return query;
-    },
-    [resource.state, search, preserveQuery]
-  );
+    // Clean undefined values
+    Object.keys(query).forEach((key) => {
+      if (query[key] === undefined || query[key] === null || query[key] === '') {
+        delete query[key];
+      }
+    });
+
+    return query;
+  };
 
   // Navigation helper
-  const navigate = useCallback(
-    (query: Record<string, unknown>) => {
-      router.visit(baseUrl, {
-        data: query,
+  const navigate = (query: Record<string, unknown>) => {
+    if (onNavigate) {
+      onNavigate(query);
+    } else {
+      router.visit(baseUrl!, {
+        data: query as Record<string, string>,
         preserveState: true,
         preserveScroll: true,
       });
-    },
-    [baseUrl]
-  );
+    }
+  };
 
   // Handlers
-  const handleSearch = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      navigate(buildQuery({ search, page: 1 }));
-    },
-    [navigate, buildQuery, search]
-  );
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate(buildQuery({ search, page: 1 }));
+  };
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
-  }, []);
+  };
 
-  const handleSort = useCallback(
-    (field: string) => {
-      const currentSort = resource.state.sort;
-      let newDirection: 'asc' | 'desc' = 'asc';
+  const handleSort = (field: string) => {
+    const currentSort = resource.state.sort;
+    let newDirection: 'asc' | 'desc' = 'asc';
 
-      if (currentSort?.field === field) {
-        newDirection = currentSort.direction === 'asc' ? 'desc' : 'asc';
-      }
+    if (currentSort?.field === field) {
+      newDirection = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    }
 
-      navigate(buildQuery({ sort: { field, direction: newDirection }, page: 1 }));
-    },
-    [resource.state.sort, navigate, buildQuery]
-  );
+    navigate(buildQuery({ sort: { field, direction: newDirection }, page: 1 }));
+  };
 
-  const handlePageChange = useCallback(
-    (page: number) => {
-      navigate(buildQuery({ page }));
-    },
-    [navigate, buildQuery]
-  );
+  const handlePageChange = (page: number) => {
+    navigate(buildQuery({ page }));
+  };
 
-  const handlePerPageChange = useCallback(
-    (perPage: number) => {
-      navigate(buildQuery({ per_page: perPage, page: 1 }));
-    },
-    [navigate, buildQuery]
-  );
+  const handlePerPageChange = (perPage: number) => {
+    navigate(buildQuery({ per_page: perPage, page: 1 }));
+  };
 
   // Filter handlers
-  const handleFilterChange = useCallback(
-    (field: string, op: string, value: unknown) => {
-      // Get current filters
-      const currentFilters = [...(resource.state.filters || [])];
+  const handleFilterChange = (field: string, op: string, value: unknown) => {
+    const currentFilters = [...(resource.state.filters || [])];
+    const existingIndex = currentFilters.findIndex((f) => f.field === field && f.op === op);
 
-      // Find existing filter with same field and op
-      const existingIndex = currentFilters.findIndex(
-        (f) => f.field === field && f.op === op
-      );
+    if (existingIndex >= 0) {
+      currentFilters[existingIndex] = { field, op, value };
+    } else {
+      currentFilters.push({ field, op, value });
+    }
 
-      if (existingIndex >= 0) {
-        // Update existing filter
-        currentFilters[existingIndex] = { field, op, value };
-      } else {
-        // Add new filter
-        currentFilters.push({ field, op, value });
-      }
+    navigate(buildQuery({ filters: currentFilters, page: 1 }));
+  };
 
-      navigate(buildQuery({ filters: currentFilters, page: 1 }));
-    },
-    [resource.state.filters, navigate, buildQuery]
-  );
+  const handleFilterRemove = (field: string, op?: string) => {
+    const currentFilters = [...(resource.state.filters || [])];
+    const newFilters = currentFilters.filter((f) => {
+      if (op) return !(f.field === field && f.op === op);
+      return f.field !== field;
+    });
 
-  const handleFilterRemove = useCallback(
-    (field: string, op?: string) => {
-      const currentFilters = [...(resource.state.filters || [])];
+    navigate(buildQuery({ filters: newFilters, page: 1 }));
+  };
 
-      // Remove filter(s) matching field (and optionally op)
-      const newFilters = currentFilters.filter((f) => {
-        if (op) {
-          return !(f.field === field && f.op === op);
-        }
-        return f.field !== field;
-      });
-
-      navigate(buildQuery({ filters: newFilters, page: 1 }));
-    },
-    [resource.state.filters, navigate, buildQuery]
-  );
-
-  const handleClearFilters = useCallback(() => {
+  const handleClearFilters = () => {
     navigate(buildQuery({ filters: [], page: 1 }));
-  }, [navigate, buildQuery]);
+  };
 
   // Selection handlers
-  const handleSelectRow = useCallback((id: string | number) => {
+  const handleSelectRow = (id: string | number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -229,9 +222,9 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
       return next;
     });
     setSelectionMode('explicit');
-  }, []);
+  };
 
-  const handleSelectAll = useCallback(() => {
+  const handleSelectAll = () => {
     if (selectionMode === 'all') {
       setSelectedIds(new Set());
       setSelectionMode('explicit');
@@ -239,107 +232,127 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
       setSelectionMode('all');
       setSelectedIds(new Set());
     }
-  }, [selectionMode]);
+  };
 
-  const getSelection = useCallback((): Selection => {
-    return {
-      mode: selectionMode,
-      ids: Array.from(selectedIds),
-    };
-  }, [selectionMode, selectedIds]);
+  const getSelection = (): Selection => ({
+    mode: selectionMode,
+    ids: Array.from(selectedIds),
+  });
 
-  const selectedCount = useMemo(() => {
-    if (selectionMode === 'all') {
-      return (resource.meta.totalCount ?? resource.data.length) - selectedIds.size;
-    }
-    return selectedIds.size;
-  }, [selectionMode, selectedIds, resource.meta.totalCount, resource.data.length]);
+  const selectedCount =
+    selectionMode === 'all'
+      ? (resource.meta.totalCount ?? resource.data.length) - selectedIds.size
+      : selectedIds.size;
 
   // Action handlers
-  const handleAction = useCallback(
-    async (action: TableAction, row: T) => {
-      if (!resource.token) return;
+  const handleAction = async (action: TableAction, row: T) => {
+    // Use styled confirmation dialog instead of window.confirm
+    if (action.confirmation) {
+      const confirmed = await confirm(action.confirmation);
+      if (!confirmed) return;
+    }
 
-      // Check for confirmation
-      if (action.confirmation) {
-        const confirmed = window.confirm(
-          `${action.confirmation.title}\n\n${action.confirmation.message}`
-        );
-        if (!confirmed) return;
-      }
+    const rowId = (row as Record<string, unknown>).id as string | number;
 
-      // Execute action via API
-      const response = await fetch('/nb-flop/action', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': getCSRFToken(),
-        },
-        body: JSON.stringify({
-          token: resource.token,
-          action: action.name,
-          id: row.id,
-        }),
-      });
-
-      const result = await response.json();
-
+    // RPC transport: use callback
+    if (onAction) {
+      const result = await onAction(action.name, rowId);
       if (result.success) {
         if (result.redirect) {
-          router.visit(result.redirect);
+          window.location.href = result.redirect;
         } else {
-          router.reload();
+          onRefresh?.();
         }
       } else {
         alert(result.message || 'Action failed');
       }
-    },
-    [resource.token]
-  );
+      return;
+    }
 
-  const handleBulkAction = useCallback(
-    async (action: TableBulkAction) => {
-      if (!resource.token || selectedCount === 0) return;
+    // Inertia transport: use fetch + router
+    if (!resource.token) return;
 
-      // Check for confirmation
-      if (action.confirmation) {
-        const message = action.confirmation.message.replace('{count}', String(selectedCount));
-        const confirmed = window.confirm(`${action.confirmation.title}\n\n${message}`);
-        if (!confirmed) return;
+    const response = await fetch('/nb-flop/action', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCSRFToken(),
+      },
+      body: JSON.stringify({
+        token: resource.token,
+        action: action.name,
+        id: rowId,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      if (result.redirect) {
+        router.visit(result.redirect);
+      } else {
+        router.reload();
       }
+    } else {
+      alert(result.message || 'Action failed');
+    }
+  };
 
-      const response = await fetch('/nb-flop/bulk-action', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': getCSRFToken(),
-        },
-        body: JSON.stringify({
-          token: resource.token,
-          action: action.name,
-          selection: getSelection(),
-          filters: resource.state.filters,
-        }),
-      });
+  const handleBulkAction = async (action: TableBulkAction) => {
+    if (selectedCount === 0) return;
 
-      const result = await response.json();
+    // Use styled confirmation dialog instead of window.confirm
+    if (action.confirmation) {
+      const message = action.confirmation.message.replace('{count}', String(selectedCount));
+      const confirmed = await confirm({ ...action.confirmation, message });
+      if (!confirmed) return;
+    }
 
+    const selection = getSelection();
+
+    // RPC transport: use callback
+    if (onBulkAction) {
+      const result = await onBulkAction(action.name, selection);
       if (result.success) {
         setSelectedIds(new Set());
         setSelectionMode('explicit');
-        router.reload();
+        onRefresh?.();
       } else {
         alert(result.message || 'Bulk action failed');
       }
-    },
-    [resource.token, selectedCount, getSelection, resource.state.filters]
-  );
+      return;
+    }
+
+    // Inertia transport: use fetch + router
+    if (!resource.token) return;
+
+    const response = await fetch('/nb-flop/bulk-action', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCSRFToken(),
+      },
+      body: JSON.stringify({
+        token: resource.token,
+        action: action.name,
+        selection,
+        filters: resource.state.filters,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      setSelectedIds(new Set());
+      setSelectionMode('explicit');
+      router.reload();
+    } else {
+      alert(result.message || 'Bulk action failed');
+    }
+  };
 
   // Visible columns
-  const visibleColumns = useMemo(
-    () => resource.columns.filter((col) => col.visible),
-    [resource.columns]
-  );
+  const visibleColumns = resource.columns.filter((col) => col.visible);
 
   // Get row className
   const getRowClassName = (row: T) => {
@@ -351,7 +364,7 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
 
   // Check if row is selected
   const isRowSelected = (row: T) => {
-    const id = row.id as string | number;
+    const id = (row as Record<string, unknown>).id as string | number;
     if (selectionMode === 'all') {
       return !selectedIds.has(id);
     }
@@ -374,10 +387,7 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
           <img
             src={(value as string) || column.fallback || ''}
             alt=""
-            className={cn(
-              column.rounded && 'rounded-full',
-              'object-cover'
-            )}
+            className={cn(column.rounded && 'rounded-full', 'object-cover')}
             style={{
               width: column.width || 40,
               height: column.height || 40,
@@ -392,7 +402,7 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
           <span
             className={cn(
               'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-              getVariantClasses(colorClass)
+              getVariantClasses(colorClass),
             )}
           >
             {String(value ?? '')}
@@ -408,9 +418,7 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
 
       case 'numeric':
         const num = Number(value) || 0;
-        let formatted = column.decimals !== null
-          ? num.toFixed(column.decimals)
-          : String(num);
+        let formatted = column.decimals !== null ? num.toFixed(column.decimals) : String(num);
         if (column.thousandsSeparator) {
           formatted = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, column.thousandsSeparator);
         }
@@ -445,7 +453,10 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
           <div className="flex items-center justify-end gap-2">
             {resource.actions.map((action) => {
               // Check per-row action state for hidden/disabled
-              const rowActionState = row.actions?.[action.name];
+              const rowActions = (row as Record<string, unknown>).actions as
+                | Record<string, { hidden?: boolean; disabled?: boolean }>
+                | undefined;
+              const rowActionState = rowActions?.[action.name];
               if (rowActionState?.hidden) return null;
 
               if (renderAction) {
@@ -462,7 +473,7 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
                   className={cn(
                     'inline-flex items-center gap-1 rounded px-2 py-1 text-xs',
                     getActionClasses(action.variant),
-                    rowActionState?.disabled && 'opacity-50 cursor-not-allowed'
+                    rowActionState?.disabled && 'opacity-50 cursor-not-allowed',
                   )}
                   title={action.label ?? action.name}
                 >
@@ -474,12 +485,17 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
         );
 
       default:
-        return <span className={cn(column.truncate && 'truncate block max-w-xs')}>{String(value ?? '')}</span>;
+        return (
+          <span className={cn(column.truncate && 'truncate block max-w-xs')}>
+            {String(value ?? '')}
+          </span>
+        );
     }
   };
 
   const hasFilters = resource.filters && resource.filters.length > 0;
-  const showDefaultHeader = resource.searchable.length > 0 || resource.bulkActions.length > 0 || hasFilters;
+  const showDefaultHeader =
+    resource.searchable.length > 0 || resource.bulkActions.length > 0 || hasFilters;
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -488,7 +504,8 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
       {!header && showDefaultHeader && (
         <div className="space-y-3">
           {/* Top row: Search and bulk actions */}
-          {(resource.searchable.length > 0 || (selectedCount > 0 && resource.bulkActions.length > 0)) && (
+          {(resource.searchable.length > 0 ||
+            (selectedCount > 0 && resource.bulkActions.length > 0)) && (
             <div className="flex items-center justify-between gap-4">
               {resource.searchable.length > 0 && (
                 <form onSubmit={handleSearch} className="flex-1 max-w-sm">
@@ -502,16 +519,14 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
 
               {selectedCount > 0 && resource.bulkActions.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    {selectedCount} selected
-                  </span>
+                  <span className="text-sm text-muted-foreground">{selectedCount} selected</span>
                   {resource.bulkActions.map((action) => (
                     <button
                       key={action.name}
                       onClick={() => handleBulkAction(action)}
                       className={cn(
                         'inline-flex items-center gap-1 rounded px-3 py-1.5 text-sm',
-                        getActionClasses(action.variant)
+                        getActionClasses(action.variant),
                       )}
                     >
                       {action.label ?? action.name}
@@ -560,7 +575,7 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
                     'px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground',
                     column.alignment === 'center' && 'text-center',
                     column.alignment === 'right' && 'text-right',
-                    column.headerClass
+                    column.headerClass,
                   )}
                 >
                   {column.sortable ? (
@@ -578,7 +593,7 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
                       />
                     </button>
                   ) : (
-                    column.label ?? column.key
+                    (column.label ?? column.key)
                   )}
                 </th>
               ))}
@@ -589,13 +604,13 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
             {resource.data.length > 0 ? (
               resource.data.map((row, index) => (
                 <tr
-                  key={(row as Record<string, unknown>).id as string | number ?? index}
+                  key={((row as Record<string, unknown>).id as string | number) ?? index}
                   className={cn(
                     'transition-colors hover:bg-accent/50',
                     index !== resource.data.length - 1 && 'border-b border-border',
                     onRowClick && 'cursor-pointer',
                     isRowSelected(row) && 'bg-accent/30',
-                    getRowClassName(row)
+                    getRowClassName(row),
                   )}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
@@ -605,7 +620,9 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
                       <input
                         type="checkbox"
                         checked={isRowSelected(row)}
-                        onChange={() => handleSelectRow((row as Record<string, unknown>).id as string | number)}
+                        onChange={() =>
+                          handleSelectRow((row as Record<string, unknown>).id as string | number)
+                        }
                         onClick={(e) => e.stopPropagation()}
                         className="rounded border-border"
                       />
@@ -613,23 +630,25 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
                   )}
 
                   {/* Row cells */}
-                  {renderRow ? (
-                    renderRow(row, visibleColumns)
-                  ) : (
-                    visibleColumns.map((column) => (
-                      <td
-                        key={column.key}
-                        className={cn(
-                          'px-4 py-3',
-                          column.alignment === 'center' && 'text-center',
-                          column.alignment === 'right' && 'text-right',
-                          column.cellClass
-                        )}
-                      >
-                        {defaultRenderCell(column, (row as Record<string, unknown>)[column.key], row)}
-                      </td>
-                    ))
-                  )}
+                  {renderRow
+                    ? renderRow(row, visibleColumns)
+                    : visibleColumns.map((column) => (
+                        <td
+                          key={column.key}
+                          className={cn(
+                            'px-4 py-3',
+                            column.alignment === 'center' && 'text-center',
+                            column.alignment === 'right' && 'text-right',
+                            column.cellClass,
+                          )}
+                        >
+                          {defaultRenderCell(
+                            column,
+                            (row as Record<string, unknown>)[column.key],
+                            row,
+                          )}
+                        </td>
+                      ))}
                 </tr>
               ))
             ) : (
@@ -665,7 +684,7 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
         </table>
 
         {/* Pagination */}
-        {resource.meta.totalPages != null && resource.meta.totalPages > 1 && (
+        {resource.meta.totalPages && resource.meta.totalPages > 1 && (
           <div className="border-t border-border px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
@@ -698,7 +717,13 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
                 nextOffset: null,
                 startCursor: null,
                 endCursor: null,
-                flop: resource.meta.flop ?? { filters: [], orderBy: null, orderDirections: null, page: null, pageSize: null },
+                flop: resource.meta.flop ?? {
+                  filters: [],
+                  orderBy: null,
+                  orderDirections: null,
+                  page: null,
+                  pageSize: null,
+                },
               }}
               onPageChange={handlePageChange}
               className="flex items-center gap-1"
@@ -708,6 +733,9 @@ export function Table<T extends Record<string, unknown> = Record<string, unknown
       </div>
 
       {footer}
+
+      {/* Confirmation dialog */}
+      {dialogProps && <ConfirmDialog {...dialogProps} />}
     </div>
   );
 }
@@ -757,7 +785,12 @@ function SortIcon({ direction }: { direction: 'asc' | 'desc' | null }) {
   }
   return (
     <svg className="h-4 w-4 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+      />
     </svg>
   );
 }

@@ -24,7 +24,7 @@ config :nb_pingcrm, NbPingcrmWeb.Endpoint,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "sBot6R8QfIbfK4asEfgGsqaco+ooSDVyNBTqsK0/+jgCZ+b3MkzOBMKejcKhtsBf",
-  watchers: [bun: {Bun, :install_and_run, [:dev, []]}]
+  watchers: [vite: {Mix.Tasks.NbVite, :run, [["dev"]]}]
 
 # ## SSL Support
 #
@@ -85,4 +85,4 @@ config :phoenix_live_view,
 config :swoosh, :api_client, false
 
 # Tell nb_inertia we're in dev mode so SSR uses the Vite dev server
-config :nb_inertia, env: :dev
+config :nb_inertia, env: :dev, raise_on_ssr_failure: false

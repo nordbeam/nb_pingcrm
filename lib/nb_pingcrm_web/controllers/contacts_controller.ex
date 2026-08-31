@@ -1,6 +1,5 @@
 defmodule NbPingcrmWeb.ContactsController do
   use NbPingcrmWeb, :controller
-  use NbInertia.Controller
 
   alias NbFlop.Serializers.TableResourceSerializer
   alias NbInertia.Modal.Redirector

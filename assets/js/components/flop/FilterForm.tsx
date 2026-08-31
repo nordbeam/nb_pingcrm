@@ -61,11 +61,7 @@ export function FilterForm({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className={`flop-filter-form ${className}`}
-      role="search"
-    >
+    <form onSubmit={handleSubmit} className={`flop-filter-form ${className}`} role="search">
       {children ? children(renderProps) : null}
     </form>
   );

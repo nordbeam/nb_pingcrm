@@ -9,11 +9,7 @@ import { Button } from '@/components/ui/button';
 import type { TableFilter, TableFlopFilter, FilterClause } from './tableTypes';
 import { FilterChip } from './FilterChip';
 import { AddFilterButton } from './AddFilterButton';
-import {
-  clauseToFlopOp,
-  flopOpToClause,
-  transformFilterValue,
-} from './filterUtils';
+import { clauseToFlopOp, flopOpToClause, transformFilterValue } from './filterUtils';
 
 export interface FilterBarProps {
   /** Filter definitions from DSL (resource.filters) */
@@ -123,10 +119,7 @@ export function FilterBar({
 
       {/* Add filter button */}
       {availableFilters.length > 0 && (
-        <AddFilterButton
-          filters={availableFilters}
-          onAddFilter={handleAddFilter}
-        />
+        <AddFilterButton filters={availableFilters} onAddFilter={handleAddFilter} />
       )}
 
       {/* Clear all button */}

@@ -1,11 +1,10 @@
-import { Head, usePage, ClientModalLink, useModalStack } from "@/lib/inertia";
-import type { OrganizationsIndexProps } from "@/types";
-import type { TableResource } from "@/components/flop";
-import { Table } from "@/components/flop";
-import { organizations as orgsRoutes } from "@/routes";
-import { OrganizationFormSkeleton } from "@/components/OrganizationFormSkeleton";
-import { useTableRealtime } from "@/hooks/useTableRealtime";
-import { CircleDot } from "lucide-react";
+import { Head, usePageProps, ClientModalLink, useModalStack } from '@/lib/inertia';
+import type { TableResource } from '@/components/flop';
+import { Table } from '@/components/flop';
+import { organizations as orgsRoutes } from '@/routes';
+import { OrganizationFormSkeleton } from '@/components/OrganizationFormSkeleton';
+import { useTableRealtime } from '@/hooks/useTableRealtime';
+import { CircleDot } from 'lucide-react';
 
 interface Organization {
   id: number;
@@ -22,18 +21,18 @@ interface Organization {
 }
 
 export default function OrganizationsIndex() {
-  const { props } = usePage<OrganizationsIndexProps>();
+  const props = usePageProps('Organizations/Index');
   const { visitModal } = useModalStack();
   const organizations = props.organizations as TableResource<Organization>;
 
   // Real-time updates
   const { data, isHighlighted } = useTableRealtime<Organization>({
     initialData: organizations.data,
-    topic: "crm:organizations",
-    createEvent: "organization_created",
-    updateEvent: "organization_updated",
-    deleteEvent: "organization_deleted",
-    recordKey: "organization",
+    topic: 'crm:organizations',
+    createEvent: 'organization_created',
+    updateEvent: 'organization_updated',
+    deleteEvent: 'organization_deleted',
+    recordKey: 'organization',
   });
 
   return (
@@ -58,7 +57,7 @@ export default function OrganizationsIndex() {
               <ClientModalLink
                 href={orgsRoutes.new()}
                 loadingComponent={OrganizationFormSkeleton}
-                modalConfig={{ slideover: true, position: "right" }}
+                modalConfig={{ slideover: true, position: 'right' }}
                 prefetch
               >
                 <button className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
@@ -74,20 +73,18 @@ export default function OrganizationsIndex() {
             baseUrl="/organizations"
             rowClassName={(row) => {
               const classes: string[] = [];
-              if (row.deletedAt) classes.push("bg-muted/50 opacity-60");
+              if (row.deletedAt) classes.push('bg-muted/50 opacity-60');
               if (isHighlighted(row.id)) {
-                classes.push(
-                  "animate-pulse bg-primary/10 ring-1 ring-primary/20"
-                );
+                classes.push('animate-pulse bg-primary/10 ring-1 ring-primary/20');
               }
-              return classes.join(" ");
+              return classes.join(' ');
             }}
             onRowClick={(row) => {
               visitModal(orgsRoutes.edit(row.id));
             }}
-            renderCell={(column, value, row) => {
+            renderCell={(column, _value, row) => {
               // Custom rendering for name with delete indicator
-              if (column.key === "name") {
+              if (column.key === 'name') {
                 return (
                   <div>
                     <div className="font-medium">{row.name}</div>
@@ -99,9 +96,9 @@ export default function OrganizationsIndex() {
               }
 
               // Custom rendering for location
-              if (column.key === "city") {
+              if (column.key === 'city') {
                 const parts = [row.city, row.region].filter(Boolean);
-                return parts.length > 0 ? parts.join(", ") : null;
+                return parts.length > 0 ? parts.join(', ') : null;
               }
 
               return undefined; // Use default rendering
@@ -109,7 +106,7 @@ export default function OrganizationsIndex() {
           />
 
           <div className="mt-3 text-xs text-muted-foreground">
-            {data.length} organization{data.length !== 1 ? "s" : ""} total
+            {data.length} organization{data.length !== 1 ? 's' : ''} total
           </div>
         </div>
       </div>

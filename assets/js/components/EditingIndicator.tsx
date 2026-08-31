@@ -1,4 +1,4 @@
-import { Pencil } from "lucide-react";
+import { Pencil } from 'lucide-react';
 
 interface EditingUser {
   userId: number;
@@ -16,7 +16,7 @@ interface EditingIndicatorProps {
  * Place this near the input field label.
  */
 export function EditingIndicator({ editingUser }: EditingIndicatorProps) {
-  const firstName = editingUser.name.split(" ")[0];
+  const firstName = editingUser.name.split(' ')[0];
 
   return (
     <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
@@ -49,7 +49,7 @@ export function EditingBanner({ editingUsers }: EditingBannerProps) {
       acc[user.userId].fields.push(user.field);
       return acc;
     },
-    {} as Record<number, { name: string; fields: string[] }>
+    {} as Record<number, { name: string; fields: string[] }>,
   );
 
   const userList = Object.values(userFields);
@@ -60,9 +60,9 @@ export function EditingBanner({ editingUsers }: EditingBannerProps) {
       <span className="text-sm text-blue-800 dark:text-blue-200">
         {userList.map((u, i) => (
           <span key={i}>
-            {i > 0 && (i === userList.length - 1 ? " and " : ", ")}
-            <span className="font-medium">{u.name.split(" ")[0]}</span>
-            {" is editing "}
+            {i > 0 && (i === userList.length - 1 ? ' and ' : ', ')}
+            <span className="font-medium">{u.name.split(' ')[0]}</span>
+            {' is editing '}
             <span className="font-medium">{formatFields(u.fields)}</span>
           </span>
         ))}
@@ -73,12 +73,10 @@ export function EditingBanner({ editingUsers }: EditingBannerProps) {
 
 function formatFields(fields: string[]): string {
   const formatted = fields.map((f) =>
-    f
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (l) => l.toUpperCase())
+    f.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
   );
 
   if (formatted.length === 1) return formatted[0];
   if (formatted.length === 2) return `${formatted[0]} and ${formatted[1]}`;
-  return `${formatted.slice(0, -1).join(", ")}, and ${formatted[formatted.length - 1]}`;
+  return `${formatted.slice(0, -1).join(', ')}, and ${formatted[formatted.length - 1]}`;
 }

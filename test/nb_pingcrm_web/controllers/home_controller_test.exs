@@ -1,4 +1,4 @@
-defmodule NbPingcrmWeb.PageControllerTest do
+defmodule NbPingcrmWeb.HomeControllerTest do
   use NbPingcrmWeb.ConnCase
 
   test "GET / redirects unauthenticated users to log in", %{conn: conn} do

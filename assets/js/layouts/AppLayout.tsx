@@ -1,20 +1,9 @@
-import { useState, useEffect } from "react";
-import { Link, usePage } from "@/lib/inertia";
-import type { AuthProps } from "@/types";
-import { LogoIcon } from "@/components/Logo";
-import { AppSidebar } from "@/components/AppSidebar";
-import {
-  CheckCircle,
-  XCircle,
-  Info,
-  AlertTriangle,
-  X,
-} from "lucide-react";
-import {
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { useState, useEffect } from 'react';
+import { Link, usePage } from '@/lib/inertia';
+import { LogoIcon } from '@/components/Logo';
+import { AppSidebar } from '@/components/AppSidebar';
+import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -29,7 +18,7 @@ interface Flash {
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  const { props } = usePage<AuthProps>();
+  const { props } = usePage();
   const { flash } = props;
 
   return (
@@ -49,9 +38,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <FlashMessages flash={flash} />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );
@@ -90,10 +77,7 @@ function FlashMessages({ flash }: { flash: Flash }) {
           <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
             <XCircle className="h-4 w-4 shrink-0 text-red-500" />
             <span className="flex-1">{flash.error}</span>
-            <button
-              onClick={() => setVisible(false)}
-              className="text-red-600 hover:text-red-800"
-            >
+            <button onClick={() => setVisible(false)} className="text-red-600 hover:text-red-800">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -102,10 +86,7 @@ function FlashMessages({ flash }: { flash: Flash }) {
           <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
             <Info className="h-4 w-4 shrink-0 text-blue-500" />
             <span className="flex-1">{flash.info}</span>
-            <button
-              onClick={() => setVisible(false)}
-              className="text-blue-600 hover:text-blue-800"
-            >
+            <button onClick={() => setVisible(false)} className="text-blue-600 hover:text-blue-800">
               <X className="h-4 w-4" />
             </button>
           </div>

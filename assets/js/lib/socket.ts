@@ -47,13 +47,7 @@ if (socket) {
 }
 
 // Re-export hooks for convenience
-export {
-  useChannel,
-  usePresence,
-  useRealtimeProps,
-  useChannelProps,
-  createSocket,
-};
+export { useChannel, usePresence, useRealtimeProps, useChannelProps, createSocket };
 
 // Re-export types
 export type {

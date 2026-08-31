@@ -1,4 +1,4 @@
-import { route, type Route, type RouteOptions, type Param } from './lib/wayfinder';
+import { route } from './lib/wayfinder';
 
 /**
  * GET /
@@ -6,7 +6,7 @@ import { route, type Route, type RouteOptions, type Param } from './lib/wayfinde
  */
 const index = route('/', 'get');
 
-export const pages = {
+export const homes = {
   index,
 } as const;
 

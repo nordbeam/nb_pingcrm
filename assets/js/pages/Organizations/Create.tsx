@@ -1,26 +1,26 @@
-import { Head } from "@/lib/inertia";
-import { router, useForm } from "@/lib/inertia";
-import { organizations } from "@/routes";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Head } from '@/lib/inertia';
+import { router, useForm } from '@/lib/inertia';
+import { organizations } from '@/routes';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+} from '@/components/ui/select';
+import { Loader2 } from 'lucide-react';
 
 const COUNTRIES = [
-  { code: "US", name: "United States" },
-  { code: "CA", name: "Canada" },
-  { code: "MX", name: "Mexico" },
-  { code: "GB", name: "United Kingdom" },
-  { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" },
-  { code: "AU", name: "Australia" },
+  { code: 'US', name: 'United States' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'MX', name: 'Mexico' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'AU', name: 'Australia' },
 ];
 
 interface OrganizationsCreateProps {
@@ -30,16 +30,16 @@ interface OrganizationsCreateProps {
 export default function OrganizationsCreate({ onClose }: OrganizationsCreateProps) {
   const form = useForm(
     {
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
-      city: "",
-      region: "",
-      country: "US",
-      postal_code: "",
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      region: '',
+      country: 'US',
+      postal_code: '',
     },
-    organizations.create()
+    organizations.create(),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -68,7 +68,7 @@ export default function OrganizationsCreate({ onClose }: OrganizationsCreateProp
             <Input
               id="name"
               value={form.data.name}
-              onChange={(e) => form.setData("name", e.target.value)}
+              onChange={(e) => form.setData('name', e.target.value)}
               className="mt-1.5"
             />
             {form.errors.name && (
@@ -83,13 +83,11 @@ export default function OrganizationsCreate({ onClose }: OrganizationsCreateProp
                 id="email"
                 type="email"
                 value={form.data.email}
-                onChange={(e) => form.setData("email", e.target.value)}
+                onChange={(e) => form.setData('email', e.target.value)}
                 className="mt-1.5"
               />
               {form.errors.email && (
-                <p className="mt-1.5 text-sm text-destructive">
-                  {form.errors.email}
-                </p>
+                <p className="mt-1.5 text-sm text-destructive">{form.errors.email}</p>
               )}
             </div>
 
@@ -99,13 +97,11 @@ export default function OrganizationsCreate({ onClose }: OrganizationsCreateProp
                 id="phone"
                 type="tel"
                 value={form.data.phone}
-                onChange={(e) => form.setData("phone", e.target.value)}
+                onChange={(e) => form.setData('phone', e.target.value)}
                 className="mt-1.5"
               />
               {form.errors.phone && (
-                <p className="mt-1.5 text-sm text-destructive">
-                  {form.errors.phone}
-                </p>
+                <p className="mt-1.5 text-sm text-destructive">{form.errors.phone}</p>
               )}
             </div>
           </div>
@@ -115,13 +111,11 @@ export default function OrganizationsCreate({ onClose }: OrganizationsCreateProp
             <Input
               id="address"
               value={form.data.address}
-              onChange={(e) => form.setData("address", e.target.value)}
+              onChange={(e) => form.setData('address', e.target.value)}
               className="mt-1.5"
             />
             {form.errors.address && (
-              <p className="mt-1.5 text-sm text-destructive">
-                {form.errors.address}
-              </p>
+              <p className="mt-1.5 text-sm text-destructive">{form.errors.address}</p>
             )}
           </div>
 
@@ -131,7 +125,7 @@ export default function OrganizationsCreate({ onClose }: OrganizationsCreateProp
               <Input
                 id="city"
                 value={form.data.city}
-                onChange={(e) => form.setData("city", e.target.value)}
+                onChange={(e) => form.setData('city', e.target.value)}
                 className="mt-1.5"
               />
               {form.errors.city && (
@@ -144,13 +138,11 @@ export default function OrganizationsCreate({ onClose }: OrganizationsCreateProp
               <Input
                 id="region"
                 value={form.data.region}
-                onChange={(e) => form.setData("region", e.target.value)}
+                onChange={(e) => form.setData('region', e.target.value)}
                 className="mt-1.5"
               />
               {form.errors.region && (
-                <p className="mt-1.5 text-sm text-destructive">
-                  {form.errors.region}
-                </p>
+                <p className="mt-1.5 text-sm text-destructive">{form.errors.region}</p>
               )}
             </div>
           </div>
@@ -160,7 +152,7 @@ export default function OrganizationsCreate({ onClose }: OrganizationsCreateProp
               <Label htmlFor="country">Country</Label>
               <Select
                 value={form.data.country}
-                onValueChange={(value) => form.setData("country", value)}
+                onValueChange={(value) => form.setData('country', value)}
               >
                 <SelectTrigger className="mt-1.5">
                   <SelectValue placeholder="Select a country" />
@@ -174,9 +166,7 @@ export default function OrganizationsCreate({ onClose }: OrganizationsCreateProp
                 </SelectContent>
               </Select>
               {form.errors.country && (
-                <p className="mt-1.5 text-sm text-destructive">
-                  {form.errors.country}
-                </p>
+                <p className="mt-1.5 text-sm text-destructive">{form.errors.country}</p>
               )}
             </div>
 
@@ -185,13 +175,11 @@ export default function OrganizationsCreate({ onClose }: OrganizationsCreateProp
               <Input
                 id="postal_code"
                 value={form.data.postal_code}
-                onChange={(e) => form.setData("postal_code", e.target.value)}
+                onChange={(e) => form.setData('postal_code', e.target.value)}
                 className="mt-1.5"
               />
               {form.errors.postal_code && (
-                <p className="mt-1.5 text-sm text-destructive">
-                  {form.errors.postal_code}
-                </p>
+                <p className="mt-1.5 text-sm text-destructive">{form.errors.postal_code}</p>
               )}
             </div>
           </div>
@@ -207,7 +195,7 @@ export default function OrganizationsCreate({ onClose }: OrganizationsCreateProp
                   Creating...
                 </>
               ) : (
-                "Create Organization"
+                'Create Organization'
               )}
             </Button>
           </div>

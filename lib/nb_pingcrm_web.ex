@@ -75,6 +75,11 @@ defmodule NbPingcrmWeb do
 
       import NbInertia.HTML
       alias NbVite, as: Vite
+      alias NbVite, as: Vite
+      alias NbVite, as: Vite
+      alias NbVite, as: Vite
+      alias NbVite, as: Vite
+      alias NbVite, as: Vite
 
       # Include general helpers for rendering HTML
       unquote(html_helpers())

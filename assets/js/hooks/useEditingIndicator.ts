@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { usePage } from "@/lib/inertia";
-import { socket, useChannel } from "@/lib/socket";
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { usePage } from '@/lib/inertia';
+import { socket, useChannel } from '@/lib/socket';
 
 interface EditingUser {
   userId: number;
@@ -10,7 +10,7 @@ interface EditingUser {
 }
 
 interface UseEditingIndicatorOptions {
-  type: "contact" | "organization" | "user";
+  type: 'contact' | 'organization' | 'user';
   id: number;
 }
 
@@ -35,14 +35,14 @@ export function useEditingIndicator({
   type,
   id,
 }: UseEditingIndicatorOptions): UseEditingIndicatorReturn {
-  const { props } = usePage<{ user?: { id: number } }>();
+  const { props } = usePage();
   const currentUserId = props.user?.id;
   const topic = `crm:${type}:${id}`;
 
   const [editingUsers, setEditingUsers] = useState<EditingUser[]>([]);
   const channelRef = useRef<ReturnType<typeof useChannel> | null>(null);
   const currentFieldRef = useRef<string | null>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Join channel and listen for editing events
   channelRef.current = useChannel(socket, topic, {
@@ -63,10 +63,7 @@ export function useEditingIndicator({
         setEditingUsers((prev) => {
           // Remove existing entry for this user
           const filtered = prev.filter((u) => u.userId !== user_id);
-          return [
-            ...filtered,
-            { userId: user_id, name, field, timestamp: Date.now() },
-          ];
+          return [...filtered, { userId: user_id, name, field, timestamp: Date.now() }];
         });
       } else {
         // User stopped editing
@@ -87,32 +84,29 @@ export function useEditingIndicator({
   // Clean up on unmount - notify others we stopped editing
   useEffect(() => {
     return () => {
-      if (currentFieldRef.current && channelRef.current?.channel) {
-        channelRef.current.channel.push("editing", { editing: false });
+      if (currentFieldRef.current && channelRef.current) {
+        channelRef.current.push('editing', { editing: false });
       }
     };
   }, []);
 
-  const startEditing = useCallback(
-    (field: string) => {
-      // Debounce to avoid flooding the channel
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
+  const startEditing = useCallback((field: string) => {
+    // Debounce to avoid flooding the channel
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    currentFieldRef.current = field;
+
+    debounceRef.current = setTimeout(() => {
+      if (channelRef.current) {
+        channelRef.current.push('editing', {
+          editing: true,
+          field,
+        });
       }
-
-      currentFieldRef.current = field;
-
-      debounceRef.current = setTimeout(() => {
-        if (channelRef.current?.channel) {
-          channelRef.current.channel.push("editing", {
-            editing: true,
-            field,
-          });
-        }
-      }, 300);
-    },
-    []
-  );
+    }, 300);
+  }, []);
 
   const stopEditing = useCallback(() => {
     if (debounceRef.current) {
@@ -121,14 +115,14 @@ export function useEditingIndicator({
 
     currentFieldRef.current = null;
 
-    if (channelRef.current?.channel) {
-      channelRef.current.channel.push("editing", { editing: false });
+    if (channelRef.current) {
+      channelRef.current.push('editing', { editing: false });
     }
   }, []);
 
   const isFieldBeingEdited = useCallback(
     (field: string) => editingUsers.find((u) => u.field === field),
-    [editingUsers]
+    [editingUsers],
   );
 
   const fieldsBeingEdited = editingUsers.map((u) => u.field);

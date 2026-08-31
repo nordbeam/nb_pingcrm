@@ -37,14 +37,14 @@ defmodule NbPingcrmWeb.Endpoint do
   if Code.ensure_loaded?(Tidewave) do
     # Skip Tidewave for internal modal base page requests (from NbInertia.Modal.HttpClient)
     plug :maybe_tidewave
-  end
 
-  defp maybe_tidewave(conn, _opts) do
-    if Plug.Conn.get_req_header(conn, "x-inertia-modal-base-request") == ["true"] do
-      conn
-    else
-      tidewave = Tidewave
-      apply(tidewave, :call, [conn, apply(tidewave, :init, [[]])])
+    defp maybe_tidewave(conn, _opts) do
+      if Plug.Conn.get_req_header(conn, "x-inertia-modal-base-request") == ["true"] do
+        conn
+      else
+        tidewave = Tidewave
+        apply(tidewave, :call, [conn, apply(tidewave, :init, [[]])])
+      end
     end
   end
 

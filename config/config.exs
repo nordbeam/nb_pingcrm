@@ -7,6 +7,14 @@
 # General application configuration
 import Config
 
+config :nb_ts,
+  output_dir: "assets/js/types",
+  emit: [:interfaces, :zod],
+  page_props_augmentation: true,
+  page_registry: true
+
+config :nb_serializer, camelize_props: true
+
 config :nb_pingcrm, :scopes,
   user: [
     default: true,
@@ -27,34 +35,10 @@ config :nb_routes,
   router: NbPingcrmWeb.Router,
   variant: :rich,
   with_methods: true,
-  with_forms: true
+  with_forms: true,
+  style: :resource
 
 config :flop, repo: NbPingcrm.Repo
-
-config :bun,
-  version: "1.3.0",
-  dev: [
-    args: ["run", "dev"],
-    cd: Path.expand("../assets", __DIR__),
-    env: %{
-      "PHX_BUILD_PATH" => Mix.Project.build_path(),
-      "PHX_APP_NAME" => "nb_pingcrm",
-      "PHX_VERSION" => "1.8"
-    }
-  ],
-  build: [
-    args: ["run", "build"],
-    cd: Path.expand("../assets", __DIR__),
-    env: %{
-      "PHX_BUILD_PATH" => Mix.Project.build_path(),
-      "PHX_APP_NAME" => "nb_pingcrm",
-      "PHX_VERSION" => "1.8"
-    }
-  ],
-  assets: [
-    args: [],
-    cd: Path.expand("../assets", __DIR__)
-  ]
 
 config :nb_pingcrm,
   ecto_repos: [NbPingcrm.Repo],
@@ -79,27 +63,6 @@ config :nb_pingcrm, NbPingcrmWeb.Endpoint,
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
 config :nb_pingcrm, NbPingcrm.Mailer, adapter: Swoosh.Adapters.Local
-
-# Configure esbuild (the version is required)
-config :esbuild,
-  version: "0.25.4",
-  nb_pingcrm: [
-    args:
-      ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
-    cd: Path.expand("../assets", __DIR__),
-    env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
-  ]
-
-# Configure tailwind (the version is required)
-config :tailwind,
-  version: "4.1.7",
-  nb_pingcrm: [
-    args: ~w(
-      --input=assets/css/app.css
-      --output=priv/static/assets/css/app.css
-    ),
-    cd: Path.expand("..", __DIR__)
-  ]
 
 # Configures Elixir's Logger
 config :logger, :default_formatter,

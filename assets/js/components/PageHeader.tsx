@@ -1,8 +1,8 @@
-import { ClientModalLink } from "@/lib/inertia";
-import type { ModalConfig } from "@/lib/inertia";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import type { Route } from "@/routes";
+import { ClientModalLink } from '@/lib/inertia';
+import type { ModalConfig } from '@/lib/inertia';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import type { Route } from '@/routes';
 
 type PrefetchMode = 'hover' | 'mount' | 'click';
 
@@ -25,9 +25,7 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
     <div className="mb-6 flex items-center justify-between">
       <div>
         <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-        {description && (
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-        )}
+        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       </div>
       {action && (
         <ClientModalLink

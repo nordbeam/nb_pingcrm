@@ -165,10 +165,7 @@ export function getDefaultClauseForType(type: FilterType): FilterClause {
 /**
  * Format a filter value for display
  */
-export function formatFilterValue(
-  value: unknown,
-  options?: TableFilterOption[]
-): string {
+export function formatFilterValue(value: unknown, options?: TableFilterOption[]): string {
   if (value === null || value === undefined || value === '') {
     return '(empty)';
   }
@@ -200,7 +197,9 @@ export function formatFilterValue(
 /**
  * Get input type for a filter type
  */
-export function getInputTypeForFilterType(type: FilterType): 'text' | 'number' | 'date' | 'datetime-local' {
+export function getInputTypeForFilterType(
+  type: FilterType,
+): 'text' | 'number' | 'date' | 'datetime-local' {
   switch (type) {
     case 'numeric':
       return 'number';

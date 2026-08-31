@@ -1,20 +1,18 @@
-import { Head, Link, useForm, usePage } from "@/lib/inertia";
-import type { AuthRegisterProps } from "@/types";
-import { Logo } from "@/components/Logo";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { user_registrations } from "@/routes";
-import { Loader2, Mail, Check } from "lucide-react";
+import { Head, Link, useForm, usePageProps } from '@/lib/inertia';
+import { Logo } from '@/components/Logo';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { user_registrations } from '@/routes';
+import { Loader2, Mail, Check } from 'lucide-react';
 
 export default function Register() {
-  const { props } = usePage<AuthRegisterProps>();
-  const { flash, errors } = props;
+  const { flash, errors } = usePageProps('Auth/Register');
 
   const form = useForm(
     {
-      email: "",
+      email: '',
     },
-    user_registrations.create()
+    user_registrations.create(),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -23,9 +21,9 @@ export default function Register() {
   };
 
   const features = [
-    "Unlimited contacts & organizations",
-    "Team collaboration built-in",
-    "Reports & analytics",
+    'Unlimited contacts & organizations',
+    'Team collaboration built-in',
+    'Reports & analytics',
   ];
 
   return (
@@ -75,9 +73,7 @@ export default function Register() {
               </div>
             </div>
 
-            <div className="text-sm text-white/50">
-              Free to get started
-            </div>
+            <div className="text-sm text-white/50">Free to get started</div>
           </div>
         </div>
 
@@ -93,11 +89,9 @@ export default function Register() {
 
             {/* Header */}
             <div className="mb-8">
-              <h2 className="text-xl font-semibold text-foreground">
-                Create your account
-              </h2>
+              <h2 className="text-xl font-semibold text-foreground">Create your account</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Already have an account?{" "}
+                Already have an account?{' '}
                 <Link
                   href="/users/log-in"
                   className="font-medium text-primary hover:text-primary/80 transition-colors"
@@ -122,10 +116,7 @@ export default function Register() {
             {/* Registration Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-foreground mb-1.5"
-                >
+                <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1.5">
                   Email address
                 </label>
                 <div className="relative">
@@ -136,7 +127,7 @@ export default function Register() {
                     autoComplete="email"
                     required
                     value={form.data.email}
-                    onChange={(e) => form.setData("email", e.target.value)}
+                    onChange={(e) => form.setData('email', e.target.value)}
                     className="pl-9"
                     placeholder="you@example.com"
                   />
@@ -152,27 +143,23 @@ export default function Register() {
                 We'll send you a confirmation link to verify your email address.
               </p>
 
-              <Button
-                type="submit"
-                disabled={form.processing}
-                className="w-full"
-              >
+              <Button type="submit" disabled={form.processing} className="w-full">
                 {form.processing ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Creating account...
                   </>
                 ) : (
-                  "Create account"
+                  'Create account'
                 )}
               </Button>
 
               <p className="text-xs text-muted-foreground text-center">
-                By creating an account, you agree to our{" "}
+                By creating an account, you agree to our{' '}
                 <a href="#" className="text-primary hover:underline">
                   Terms of Service
-                </a>{" "}
-                and{" "}
+                </a>{' '}
+                and{' '}
                 <a href="#" className="text-primary hover:underline">
                   Privacy Policy
                 </a>

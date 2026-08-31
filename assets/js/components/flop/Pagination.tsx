@@ -4,9 +4,9 @@
  * A compact, clean pagination component for page-based pagination with Flop.
  */
 
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
-import type { PaginationProps } from "./types";
-import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import type { PaginationProps } from './types';
+import { cn } from '@/lib/utils';
 
 /**
  * Generate page numbers to display with ellipsis
@@ -14,13 +14,13 @@ import { cn } from "@/lib/utils";
 function getPageNumbers(
   currentPage: number,
   totalPages: number,
-  maxVisible: number
-): (number | "ellipsis-start" | "ellipsis-end")[] {
+  maxVisible: number,
+): (number | 'ellipsis-start' | 'ellipsis-end')[] {
   if (totalPages <= maxVisible) {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
 
-  const pages: (number | "ellipsis-start" | "ellipsis-end")[] = [];
+  const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [];
   const half = Math.floor(maxVisible / 2);
 
   pages.push(1);
@@ -35,7 +35,7 @@ function getPageNumbers(
   }
 
   if (start > 2) {
-    pages.push("ellipsis-start");
+    pages.push('ellipsis-start');
   }
 
   for (let i = start; i <= end; i++) {
@@ -43,7 +43,7 @@ function getPageNumbers(
   }
 
   if (end < totalPages - 1) {
-    pages.push("ellipsis-end");
+    pages.push('ellipsis-end');
   }
 
   if (totalPages > 1) {
@@ -56,14 +56,14 @@ function getPageNumbers(
 export function Pagination({
   meta,
   onPageChange,
-  className = "",
+  className = '',
   showPageNumbers = true,
   maxVisiblePages = 7,
   labels = {},
 }: PaginationProps) {
   const {
-    previous = "Previous",
-    next = "Next",
+    previous = 'Previous',
+    next = 'Next',
     page = (current, total) => `Page ${current} of ${total}`,
   } = labels;
 
@@ -75,32 +75,28 @@ export function Pagination({
     : [];
 
   const buttonBase = cn(
-    "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors",
-    "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
-    "disabled:pointer-events-none disabled:opacity-40"
+    'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors',
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20',
+    'disabled:pointer-events-none disabled:opacity-40',
   );
 
   const pageButton = cn(
     buttonBase,
-    "h-8 min-w-8 px-2",
-    "text-muted-foreground hover:text-foreground hover:bg-accent"
+    'h-8 min-w-8 px-2',
+    'text-muted-foreground hover:text-foreground hover:bg-accent',
   );
 
-  const activePageButton = cn(
-    buttonBase,
-    "h-8 min-w-8 px-2",
-    "bg-primary text-primary-foreground"
-  );
+  const activePageButton = cn(buttonBase, 'h-8 min-w-8 px-2', 'bg-primary text-primary-foreground');
 
   const navButton = cn(
     buttonBase,
-    "h-8 px-2 gap-1",
-    "text-muted-foreground hover:text-foreground hover:bg-accent"
+    'h-8 px-2 gap-1',
+    'text-muted-foreground hover:text-foreground hover:bg-accent',
   );
 
   return (
     <nav
-      className={cn("flex items-center justify-center gap-0.5", className)}
+      className={cn('flex items-center justify-center gap-0.5', className)}
       aria-label="Pagination"
       role="navigation"
     >
@@ -120,7 +116,7 @@ export function Pagination({
       {showPageNumbers && (
         <div className="flex items-center gap-0.5 mx-1" role="list">
           {pageNumbers.map((pageNum) =>
-            pageNum === "ellipsis-start" || pageNum === "ellipsis-end" ? (
+            pageNum === 'ellipsis-start' || pageNum === 'ellipsis-end' ? (
               <span
                 key={pageNum}
                 className="flex h-8 w-8 items-center justify-center text-muted-foreground"
@@ -133,14 +129,14 @@ export function Pagination({
                 type="button"
                 key={pageNum}
                 onClick={() => onPageChange(pageNum)}
-                aria-current={pageNum === currentPage ? "page" : undefined}
+                aria-current={pageNum === currentPage ? 'page' : undefined}
                 aria-label={`Page ${pageNum}`}
                 className={pageNum === currentPage ? activePageButton : pageButton}
                 disabled={pageNum === currentPage}
               >
                 {pageNum}
               </button>
-            )
+            ),
           )}
         </div>
       )}

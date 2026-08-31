@@ -1,11 +1,11 @@
-import { Head } from "@/lib/inertia";
-import { router, useForm } from "@/lib/inertia";
-import { users } from "@/routes";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2 } from "lucide-react";
+import { Head } from '@/lib/inertia';
+import { router, useForm } from '@/lib/inertia';
+import { users } from '@/routes';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2 } from 'lucide-react';
 
 interface UsersCreateProps {
   onClose?: () => void;
@@ -14,13 +14,13 @@ interface UsersCreateProps {
 export default function UsersCreate({ onClose }: UsersCreateProps) {
   const form = useForm(
     {
-      first_name: "",
-      last_name: "",
-      email: "",
-      password: "",
+      first_name: '',
+      last_name: '',
+      email: '',
+      password: '',
       owner: false,
     },
-    users.create()
+    users.create(),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -50,13 +50,11 @@ export default function UsersCreate({ onClose }: UsersCreateProps) {
               <Input
                 id="first_name"
                 value={form.data.first_name}
-                onChange={(e) => form.setData("first_name", e.target.value)}
+                onChange={(e) => form.setData('first_name', e.target.value)}
                 className="mt-1.5"
               />
               {form.errors.first_name && (
-                <p className="mt-1.5 text-sm text-destructive">
-                  {form.errors.first_name}
-                </p>
+                <p className="mt-1.5 text-sm text-destructive">{form.errors.first_name}</p>
               )}
             </div>
 
@@ -65,13 +63,11 @@ export default function UsersCreate({ onClose }: UsersCreateProps) {
               <Input
                 id="last_name"
                 value={form.data.last_name}
-                onChange={(e) => form.setData("last_name", e.target.value)}
+                onChange={(e) => form.setData('last_name', e.target.value)}
                 className="mt-1.5"
               />
               {form.errors.last_name && (
-                <p className="mt-1.5 text-sm text-destructive">
-                  {form.errors.last_name}
-                </p>
+                <p className="mt-1.5 text-sm text-destructive">{form.errors.last_name}</p>
               )}
             </div>
           </div>
@@ -82,7 +78,7 @@ export default function UsersCreate({ onClose }: UsersCreateProps) {
               id="email"
               type="email"
               value={form.data.email}
-              onChange={(e) => form.setData("email", e.target.value)}
+              onChange={(e) => form.setData('email', e.target.value)}
               className="mt-1.5"
             />
             {form.errors.email && (
@@ -96,13 +92,11 @@ export default function UsersCreate({ onClose }: UsersCreateProps) {
               id="password"
               type="password"
               value={form.data.password}
-              onChange={(e) => form.setData("password", e.target.value)}
+              onChange={(e) => form.setData('password', e.target.value)}
               className="mt-1.5"
             />
             {form.errors.password && (
-              <p className="mt-1.5 text-sm text-destructive">
-                {form.errors.password}
-              </p>
+              <p className="mt-1.5 text-sm text-destructive">{form.errors.password}</p>
             )}
           </div>
 
@@ -110,9 +104,7 @@ export default function UsersCreate({ onClose }: UsersCreateProps) {
             <Checkbox
               id="owner"
               checked={form.data.owner}
-              onCheckedChange={(checked) =>
-                form.setData("owner", checked === true)
-              }
+              onCheckedChange={(checked) => form.setData('owner', checked === true)}
             />
             <Label htmlFor="owner" className="cursor-pointer">
               Owner (Administrator)
@@ -130,7 +122,7 @@ export default function UsersCreate({ onClose }: UsersCreateProps) {
                   Creating...
                 </>
               ) : (
-                "Create User"
+                'Create User'
               )}
             </Button>
           </div>

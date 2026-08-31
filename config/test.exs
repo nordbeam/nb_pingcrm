@@ -1,4 +1,5 @@
 import Config
+config :nb_vite, allow_missing_manifest: true
 
 # Only in tests, remove the complexity from the password hashing algorithm
 config :bcrypt_elixir, :log_rounds, 1

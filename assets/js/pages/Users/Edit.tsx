@@ -1,21 +1,20 @@
-import { Head, usePage } from "@/lib/inertia";
-import { router, useForm } from "@/lib/inertia";
-import type { UsersEditProps } from "@/types";
-import { users } from "@/routes";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { DeletedNotice } from "@/components/DeletedNotice";
-import { ViewerIndicator } from "@/components/ViewerIndicator";
-import { Loader2, Trash2 } from "lucide-react";
+import { Head, usePageProps } from '@/lib/inertia';
+import { router, useForm } from '@/lib/inertia';
+import { users } from '@/routes';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DeletedNotice } from '@/components/DeletedNotice';
+import { ViewerIndicator } from '@/components/ViewerIndicator';
+import { Loader2, Trash2 } from 'lucide-react';
 
 interface UsersEditPageProps {
   onClose?: () => void;
 }
 
 export default function UsersEdit({ onClose }: UsersEditPageProps) {
-  const { props } = usePage<UsersEditProps>();
+  const props = usePageProps('Users/Edit');
 
   const { editedUser: user } = props;
 
@@ -26,7 +25,7 @@ export default function UsersEdit({ onClose }: UsersEditPageProps) {
       email: user.email,
       owner: user.owner,
     },
-    users.update(user.id)
+    users.update(user.id),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -62,99 +61,91 @@ export default function UsersEdit({ onClose }: UsersEditPageProps) {
           <ViewerIndicator type="user" id={user.id} />
         </div>
 
-        {user.deletedAt && (
-          <DeletedNotice entityName="user" onRestore={handleRestore} />
-        )}
+        {user.deletedAt && <DeletedNotice entityName="user" onRestore={handleRestore} />}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="first_name">First Name</Label>
-                <Input
-                  id="first_name"
-                  value={form.data.first_name}
-                  onChange={(e) => form.setData("first_name", e.target.value)}
-                  className="mt-1.5"
-                />
-                {form.errors.first_name && (
-                  <p className="mt-1.5 text-sm text-destructive">
-                    {form.errors.first_name}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="last_name">Last Name</Label>
-                <Input
-                  id="last_name"
-                  value={form.data.last_name}
-                  onChange={(e) => form.setData("last_name", e.target.value)}
-                  className="mt-1.5"
-                />
-                {form.errors.last_name && (
-                  <p className="mt-1.5 text-sm text-destructive">
-                    {form.errors.last_name}
-                  </p>
-                )}
-              </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="first_name">First Name</Label>
+              <Input
+                id="first_name"
+                value={form.data.first_name}
+                onChange={(e) => form.setData('first_name', e.target.value)}
+                className="mt-1.5"
+              />
+              {form.errors.first_name && (
+                <p className="mt-1.5 text-sm text-destructive">{form.errors.first_name}</p>
+              )}
             </div>
 
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="last_name">Last Name</Label>
               <Input
-                id="email"
-                type="email"
-                value={form.data.email}
-                onChange={(e) => form.setData("email", e.target.value)}
+                id="last_name"
+                value={form.data.last_name}
+                onChange={(e) => form.setData('last_name', e.target.value)}
                 className="mt-1.5"
               />
-              {form.errors.email && (
-                <p className="mt-1.5 text-sm text-destructive">{form.errors.email}</p>
+              {form.errors.last_name && (
+                <p className="mt-1.5 text-sm text-destructive">{form.errors.last_name}</p>
               )}
             </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="owner"
-                checked={form.data.owner}
-                onCheckedChange={(checked) =>
-                  form.setData("owner", checked === true)
-                }
-              />
-              <Label htmlFor="owner" className="cursor-pointer">
-                Owner (Administrator)
-              </Label>
-            </div>
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={form.data.email}
+              onChange={(e) => form.setData('email', e.target.value)}
+              className="mt-1.5"
+            />
+            {form.errors.email && (
+              <p className="mt-1.5 text-sm text-destructive">{form.errors.email}</p>
+            )}
+          </div>
 
-            <div className="flex items-center justify-between border-t border-border pt-5">
-              {!user.deletedAt && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleDelete}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </Button>
-              )}
-              <div className="ml-auto flex gap-3">
-                <Button type="button" variant="outline" onClick={handleCancel}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={form.processing}>
-                  {form.processing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </Button>
-              </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="owner"
+              checked={form.data.owner}
+              onCheckedChange={(checked) => form.setData('owner', checked === true)}
+            />
+            <Label htmlFor="owner" className="cursor-pointer">
+              Owner (Administrator)
+            </Label>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-border pt-5">
+            {!user.deletedAt && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleDelete}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            )}
+            <div className="ml-auto flex gap-3">
+              <Button type="button" variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={form.processing}>
+                {form.processing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
             </div>
-          </form>
+          </div>
+        </form>
       </div>
     </>
   );

@@ -1,7 +1,7 @@
-import { usePage, Head, Link } from "@/lib/inertia";
-import { socket, useChannelProps, usePresence } from "@/lib/socket";
-import { contacts, organizations, users } from "@/routes";
-import type { DashboardProps, Activity } from "@/types";
+import { usePageProps, Head, Link } from '@/lib/inertia';
+import { socket, useChannelProps, usePresence } from '@/lib/socket';
+import { contacts, organizations, users } from '@/routes';
+import type { DashboardPropsRuntime } from '@/types';
 import {
   Users,
   Building2,
@@ -15,36 +15,36 @@ import {
   Pencil,
   Trash2,
   RotateCcw,
-} from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+} from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 // Channel event types
 interface CrmEvents {
   stats_updated: Record<string, never>;
-  activity_created: { activity: Activity };
+  activity_created: { activity: DashboardPropsRuntime['activities'][number] };
 }
 
 export default function Dashboard() {
-  const { props: serverProps } = usePage<DashboardProps>();
+  const serverProps = usePageProps('Dashboard');
 
   // Real-time props with automatic updates
-  const { props } = useChannelProps<DashboardProps, CrmEvents>(
+  const { props } = useChannelProps<DashboardPropsRuntime, CrmEvents>(
     socket,
-    "crm:lobby",
+    'crm:lobby',
     {
       // Reload stats from server when stats_updated event is received
       stats_updated: {
-        prop: "stats",
-        strategy: "reload",
+        prop: 'stats',
+        strategy: 'reload',
       },
       // Prepend new activities to the list
       activity_created: {
-        prop: "activities",
-        strategy: "prepend",
+        prop: 'activities',
+        strategy: 'prepend',
         transform: (event) => event.activity,
       },
     },
-    { initialProps: serverProps }
+    { initialProps: serverProps },
   );
 
   // Online users presence
@@ -53,7 +53,7 @@ export default function Dashboard() {
     name: string;
     email: string;
     online_at: number;
-  }>(socket, "crm:lobby");
+  }>(socket, 'crm:lobby');
 
   const onlineUsers = presence.list();
   const { user, stats, activities } = props;
@@ -69,16 +69,14 @@ export default function Dashboard() {
             <div>
               <h1 className="text-xl font-semibold text-foreground">
                 Good {getGreeting()}
-                {user?.firstName ? `, ${user.firstName}` : ""}
+                {user?.firstName ? `, ${user.firstName}` : ''}
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Here's what's happening with your CRM today.
               </p>
             </div>
             {/* Online Users Indicator */}
-            {onlineUsers.length > 0 && (
-              <OnlineUsersIndicator users={onlineUsers} />
-            )}
+            {onlineUsers.length > 0 && <OnlineUsersIndicator users={onlineUsers} />}
           </div>
 
           {/* Stats Grid */}
@@ -101,13 +99,7 @@ export default function Dashboard() {
               href={users.index.url()}
               icon={User}
             />
-            <StatCard
-              title="Revenue"
-              value="$0"
-              href="/reports"
-              icon={TrendingUp}
-              isMonetary
-            />
+            <StatCard title="Revenue" value="$0" href="/reports" icon={TrendingUp} isMonetary />
           </div>
 
           {/* Content Grid */}
@@ -116,9 +108,7 @@ export default function Dashboard() {
             <div className="lg:col-span-2">
               <div className="rounded-lg border border-border bg-card">
                 <div className="flex items-center justify-between border-b border-border px-5 py-4">
-                  <h2 className="text-sm font-medium text-foreground">
-                    Recent Activity
-                  </h2>
+                  <h2 className="text-sm font-medium text-foreground">Recent Activity</h2>
                   <div className="flex items-center gap-3">
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <CircleDot className="h-2 w-2 animate-pulse text-green-500" />
@@ -150,9 +140,7 @@ export default function Dashboard() {
             <div>
               <div className="rounded-lg border border-border bg-card">
                 <div className="border-b border-border px-5 py-4">
-                  <h2 className="text-sm font-medium text-foreground">
-                    Quick Actions
-                  </h2>
+                  <h2 className="text-sm font-medium text-foreground">Quick Actions</h2>
                 </div>
                 <div className="p-2">
                   <QuickAction
@@ -186,9 +174,9 @@ export default function Dashboard() {
 // Get time-based greeting
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return "morning";
-  if (hour < 18) return "afternoon";
-  return "evening";
+  if (hour < 12) return 'morning';
+  if (hour < 18) return 'afternoon';
+  return 'evening';
 }
 
 // Online Users Indicator
@@ -212,9 +200,9 @@ function OnlineUsersIndicator({ users }: OnlineUsersIndicatorProps) {
             title={user.name}
           >
             {user.name
-              .split(" ")
+              .split(' ')
               .map((n) => n[0])
-              .join("")
+              .join('')
               .toUpperCase()}
             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-green-500" />
           </div>
@@ -225,9 +213,7 @@ function OnlineUsersIndicator({ users }: OnlineUsersIndicatorProps) {
           </div>
         )}
       </div>
-      <span className="text-xs text-muted-foreground">
-        {allUsers.length} online
-      </span>
+      <span className="text-xs text-muted-foreground">{allUsers.length} online</span>
     </div>
   );
 }
@@ -241,13 +227,7 @@ interface StatCardProps {
   isMonetary?: boolean;
 }
 
-function StatCard({
-  title,
-  value,
-  href,
-  icon: Icon,
-  isMonetary,
-}: StatCardProps) {
+function StatCard({ title, value, href, icon: Icon, isMonetary }: StatCardProps) {
   return (
     <Link
       href={href}
@@ -259,7 +239,7 @@ function StatCard({
             {title}
           </p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">
-            {isMonetary ? value : typeof value === "number" ? value.toLocaleString() : value}
+            {isMonetary ? value : typeof value === 'number' ? value.toLocaleString() : value}
           </p>
         </div>
         <div className="rounded-md bg-primary/5 p-2 transition-colors group-hover:bg-primary/10">
@@ -272,7 +252,7 @@ function StatCard({
 
 // Activity Feed Component
 interface ActivityFeedProps {
-  activities: Activity[];
+  activities: DashboardPropsRuntime['activities'];
 }
 
 function ActivityFeed({ activities }: ActivityFeedProps) {
@@ -287,7 +267,7 @@ function ActivityFeed({ activities }: ActivityFeedProps) {
 
 // Activity Item Component
 interface ActivityItemProps {
-  activity: Activity;
+  activity: DashboardPropsRuntime['activities'][number];
 }
 
 function ActivityItem({ activity }: ActivityItemProps) {
@@ -303,13 +283,10 @@ function ActivityItem({ activity }: ActivityItemProps) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm text-foreground">
-          <span className="font-medium">{activity.userName || "System"}</span>{" "}
-          {getActionVerb(activity.action)}{" "}
+          <span className="font-medium">{activity.userName || 'System'}</span>{' '}
+          {getActionVerb(activity.action)}{' '}
           <span className="font-medium">{activity.resourceName}</span>
-          <span className="text-muted-foreground">
-            {" "}
-            ({activity.resourceType})
-          </span>
+          <span className="text-muted-foreground"> ({activity.resourceType})</span>
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">
           {formatDistanceToNow(new Date(activity.insertedAt), {
@@ -323,13 +300,13 @@ function ActivityItem({ activity }: ActivityItemProps) {
 
 function getActionIcon(action: string): LucideIcon {
   switch (action) {
-    case "created":
+    case 'created':
       return UserPlus;
-    case "updated":
+    case 'updated':
       return Pencil;
-    case "deleted":
+    case 'deleted':
       return Trash2;
-    case "restored":
+    case 'restored':
       return RotateCcw;
     default:
       return Clock;
@@ -338,29 +315,29 @@ function getActionIcon(action: string): LucideIcon {
 
 function getActionColor(action: string): string {
   switch (action) {
-    case "created":
-      return "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400";
-    case "updated":
-      return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
-    case "deleted":
-      return "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400";
-    case "restored":
-      return "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400";
+    case 'created':
+      return 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400';
+    case 'updated':
+      return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
+    case 'deleted':
+      return 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400';
+    case 'restored':
+      return 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400';
     default:
-      return "bg-muted text-muted-foreground";
+      return 'bg-muted text-muted-foreground';
   }
 }
 
 function getActionVerb(action: string): string {
   switch (action) {
-    case "created":
-      return "created";
-    case "updated":
-      return "updated";
-    case "deleted":
-      return "deleted";
-    case "restored":
-      return "restored";
+    case 'created':
+      return 'created';
+    case 'updated':
+      return 'updated';
+    case 'deleted':
+      return 'deleted';
+    case 'restored':
+      return 'restored';
     default:
       return action;
   }

@@ -5,7 +5,7 @@ defmodule NbPingcrm.MixProject do
     [
       app: :nb_pingcrm,
       version: "0.1.0",
-      elixir: "~> 1.15",
+      elixir: "~> 1.20",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -40,21 +40,19 @@ defmodule NbPingcrm.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:tidewave, "~> 0.5", only: [:dev]},
+      {:deno_rider, "~> 0.2"},
+      {:tidewave, "~> 0.9", only: [:dev]},
       {:bcrypt_elixir, "~> 3.0"},
-      {:inertia, "~> 2.5"},
-      {:bun, "~> 1.5", runtime: true},
-      {:phoenix, "~> 1.8.1"},
+      {:inertia, "~> 2.6"},
+      {:phoenix, "~> 1.8.13"},
       {:phoenix_ecto, "~> 4.5"},
-      {:ecto_sql, "~> 3.13"},
-      {:postgrex, ">= 0.0.0"},
+      {:ecto_sql, "~> 3.14"},
+      {:postgrex, "~> 0.22.4"},
       {:phoenix_html, "~> 4.1"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 1.1.0"},
-      {:lazy_html, ">= 0.1.0", only: :test},
-      {:phoenix_live_dashboard, "~> 0.8.3"},
-      {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
-      {:tailwind, "~> 0.3", runtime: Mix.env() == :dev},
+      {:phoenix_live_reload, "~> 1.7", only: :dev},
+      {:phoenix_live_view, "~> 1.2.11"},
+      {:lazy_html, "~> 0.1.12", only: :test},
+      {:phoenix_live_dashboard, "~> 0.9"},
       {:heroicons,
        github: "tailwindlabs/heroicons",
        tag: "v2.2.0",
@@ -62,27 +60,27 @@ defmodule NbPingcrm.MixProject do
        app: false,
        compile: false,
        depth: 1},
-      {:swoosh, "~> 1.16"},
+      {:swoosh, "~> 1.28"},
       {:req, "~> 0.5"},
-      {:telemetry_metrics, "~> 1.0"},
+      {:telemetry_metrics, "~> 1.2"},
       {:telemetry_poller, "~> 1.0"},
-      {:gettext, "~> 0.26"},
+      {:gettext, "~> 1.0"},
       {:jason, "~> 1.2"},
-      {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"},
+      {:dns_cluster, "~> 0.3"},
+      {:bandit, "~> 1.12"},
       # nb stack (local paths for development)
+      {:nb_stack, [path: "../nb_stack", override: true]},
       {:nb_vite, path: "../nb_vite", override: true},
       {:nb_inertia, path: "../nb_inertia", override: true},
       {:nb_routes, path: "../nb_routes", override: true},
       {:nb_serializer, path: "../nb_serializer", override: true},
       {:nb_ts, path: "../nb_ts", override: true},
       {:nb_flop, path: "../nb_flop", override: true},
-      {:flop, "~> 0.26"},
+      {:flop, "~> 0.28"},
       {:csv, "~> 3.2"},
-      {:deno_rider, "~> 0.2"},
-      {:igniter, "~> 0.7"},
-      {:wallaby, "~> 0.30", runtime: false, only: :test},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:igniter, "~> 0.8"},
+      {:wallaby, "~> 0.31", runtime: false, only: :test},
+      {:credo, "~> 1.7.19", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -98,7 +96,7 @@ defmodule NbPingcrm.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.setup": ["bun.install"],
+      "assets.setup": ["nb_vite.deps"],
       "assets.build": ["compile", "nb_vite.deps", "nb_vite build"],
       "assets.deploy": [
         "compile",
@@ -112,7 +110,8 @@ defmodule NbPingcrm.MixProject do
         "assets.build",
         "test --include feature"
       ],
-      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"],
+      "ts.gen": ["nb_ts.gen"]
     ]
   end
 end

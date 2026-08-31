@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { usePage } from "@/lib/inertia";
-import { socket, usePresence, useChannel } from "@/lib/socket";
+import { useMemo } from 'react';
+import { usePage } from '@/lib/inertia';
+import { socket, usePresence, useChannel } from '@/lib/socket';
 
 interface PresenceMeta {
   user_id: number;
@@ -17,7 +17,7 @@ interface Viewer {
 }
 
 interface UseRecordPresenceOptions {
-  type: "contact" | "organization" | "user";
+  type: 'contact' | 'organization' | 'user';
   id: number;
 }
 
@@ -31,11 +31,8 @@ interface UseRecordPresenceReturn {
  * Hook to track who is viewing a specific record.
  * Uses Phoenix Presence to show real-time viewers.
  */
-export function useRecordPresence({
-  type,
-  id,
-}: UseRecordPresenceOptions): UseRecordPresenceReturn {
-  const { props } = usePage<{ user?: { id: number } }>();
+export function useRecordPresence({ type, id }: UseRecordPresenceOptions): UseRecordPresenceReturn {
+  const { props } = usePage();
   const currentUserId = props.user?.id;
   const topic = `crm:${type}:${id}`;
 
@@ -58,9 +55,9 @@ export function useRecordPresence({
             name: meta.name,
             email: meta.email,
             initials: meta.name
-              .split(" ")
+              .split(' ')
               .map((n) => n[0])
-              .join("")
+              .join('')
               .toUpperCase()
               .slice(0, 2),
           });

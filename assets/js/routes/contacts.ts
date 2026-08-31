@@ -1,4 +1,4 @@
-import { route, type Route, type RouteOptions, type Param } from './lib/wayfinder';
+import { route, type Param } from './lib/wayfinder';
 
 /**
  * GET /contacts
@@ -22,25 +22,25 @@ const create = route('/contacts', 'post');
  * GET /contacts/:id/edit
  * @action :edit
  */
-const edit = route<{ id: Param }>('/contacts/:id/edit', 'get');
+const edit = route<{ id: Param }, 'get'>('/contacts/:id/edit', 'get');
 
 /**
  * PUT /contacts/:id
  * @action :update
  */
-const update = route<{ id: Param }>('/contacts/:id', 'put');
+const update = route<{ id: Param }, 'put'>('/contacts/:id', 'put');
 
 /**
  * DELETE /contacts/:id
  * @action :delete
  */
-const delete_ = route<{ id: Param }>('/contacts/:id', 'delete');
+const delete_ = route<{ id: Param }, 'delete'>('/contacts/:id', 'delete');
 
 /**
  * PUT /contacts/:id/restore
  * @action :restore
  */
-const restore = route<{ id: Param }>('/contacts/:id/restore', 'put');
+const restore = route<{ id: Param }, 'put'>('/contacts/:id/restore', 'put');
 
 export const contacts = {
   index,

@@ -179,13 +179,7 @@ export interface FilterFormProps {
 
 // Linear-style filter types
 
-export type FilterFieldType =
-  | 'string'
-  | 'boolean'
-  | 'enum'
-  | 'relation'
-  | 'date'
-  | 'number';
+export type FilterFieldType = 'string' | 'boolean' | 'enum' | 'relation' | 'date' | 'number';
 
 export interface FilterOption {
   value: string | number;

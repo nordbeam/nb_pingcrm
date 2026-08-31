@@ -1,4 +1,4 @@
-import { route, type Route, type RouteOptions, type Param } from './lib/wayfinder';
+import { route, type Param } from './lib/wayfinder';
 
 /**
  * GET /users/log-in
@@ -22,7 +22,7 @@ const delete_ = route('/users/log-out', 'delete');
  * GET /users/log-in/:token
  * @action :confirm
  */
-const confirm = route<{ token: Param }>('/users/log-in/:token', 'get');
+const confirm = route<{ token: Param }, 'get'>('/users/log-in/:token', 'get');
 
 export const user_sessions = {
   new: new_,

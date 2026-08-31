@@ -1,5 +1,5 @@
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 interface SearchInputProps {
   value: string;
@@ -13,8 +13,8 @@ export function SearchInput({
   value,
   onChange,
   onSubmit,
-  placeholder = "Search...",
-  className = "max-w-sm",
+  placeholder = 'Search...',
+  className = 'max-w-sm',
 }: SearchInputProps) {
   const input = (
     <div className={`relative ${className}`}>

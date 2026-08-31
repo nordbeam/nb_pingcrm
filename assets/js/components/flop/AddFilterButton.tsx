@@ -34,18 +34,11 @@ export interface AddFilterButtonProps {
   onAddFilter: (field: string, clause: FilterClause, value: unknown) => void;
 }
 
-export function AddFilterButton({
-  filters,
-  onAddFilter,
-}: AddFilterButtonProps) {
+export function AddFilterButton({ filters, onAddFilter }: AddFilterButtonProps) {
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
 
-  const handleAddFilter = (
-    filter: TableFilter,
-    clause: FilterClause,
-    value: unknown
-  ) => {
+  const handleAddFilter = (filter: TableFilter, clause: FilterClause, value: unknown) => {
     onAddFilter(filter.field, clause, value);
     setOpen(false);
     // Clear input values after adding
@@ -55,7 +48,7 @@ export function AddFilterButton({
   const handleInputKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
     filter: TableFilter,
-    clause: FilterClause
+    clause: FilterClause,
   ) => {
     if (e.key === 'Enter') {
       const value = inputValues[filter.field]?.trim();
@@ -92,7 +85,10 @@ export function AddFilterButton({
                 <DropdownMenuSubContent className="p-0">
                   <Command>
                     <CommandInput
-                      placeholder={filter.placeholder || `Search ${(filter.label || filter.field).toLowerCase()}...`}
+                      placeholder={
+                        filter.placeholder ||
+                        `Search ${(filter.label || filter.field).toLowerCase()}...`
+                      }
                     />
                     <CommandList>
                       <CommandEmpty>No results found.</CommandEmpty>
@@ -125,14 +121,20 @@ export function AddFilterButton({
                   <Command>
                     <CommandList>
                       <CommandGroup>
-                        <CommandItem onSelect={() => handleAddFilter(filter, filter.defaultClause, true)}>
+                        <CommandItem
+                          onSelect={() => handleAddFilter(filter, filter.defaultClause, true)}
+                        >
                           Yes
                         </CommandItem>
-                        <CommandItem onSelect={() => handleAddFilter(filter, filter.defaultClause, false)}>
+                        <CommandItem
+                          onSelect={() => handleAddFilter(filter, filter.defaultClause, false)}
+                        >
                           No
                         </CommandItem>
                         {filter.nullable && (
-                          <CommandItem onSelect={() => handleAddFilter(filter, filter.defaultClause, null)}>
+                          <CommandItem
+                            onSelect={() => handleAddFilter(filter, filter.defaultClause, null)}
+                          >
                             Not set
                           </CommandItem>
                         )}
@@ -181,9 +183,7 @@ export function AddFilterButton({
                           autoFocus
                           className="h-8"
                         />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Press Enter to add
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Press Enter to add</p>
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
                   ))}
@@ -201,7 +201,9 @@ export function AddFilterButton({
               <DropdownMenuSubContent className="p-2 w-48">
                 <Input
                   type={inputType}
-                  placeholder={filter.placeholder || `Enter ${(filter.label || filter.field).toLowerCase()}...`}
+                  placeholder={
+                    filter.placeholder || `Enter ${(filter.label || filter.field).toLowerCase()}...`
+                  }
                   value={inputValues[filter.field] || ''}
                   onChange={(e) =>
                     setInputValues((prev) => ({
@@ -215,9 +217,7 @@ export function AddFilterButton({
                   autoFocus
                   className="h-8"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Press Enter to add filter
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Press Enter to add filter</p>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           );

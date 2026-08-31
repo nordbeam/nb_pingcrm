@@ -71,17 +71,14 @@ export function FilterValueSelect({
                 key={String(option.value)}
                 value={option.label}
                 onSelect={() => onSelect(option.value)}
-                className={cn(
-                  'flex items-center gap-2',
-                  isSelected && 'bg-accent'
-                )}
+                className={cn('flex items-center gap-2', isSelected && 'bg-accent')}
               >
                 {/* Color badge if colors provided */}
                 {colorVariant && (
                   <span
                     className={cn(
                       'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                      getColorClasses(colorVariant)
+                      getColorClasses(colorVariant),
                     )}
                   >
                     {option.label}
@@ -92,9 +89,7 @@ export function FilterValueSelect({
                 {!colorVariant && <span>{option.label}</span>}
 
                 {/* Check mark for selected item */}
-                {isSelected && (
-                  <Check className="ml-auto h-4 w-4 text-primary" />
-                )}
+                {isSelected && <Check className="ml-auto h-4 w-4 text-primary" />}
               </CommandItem>
             );
           })}

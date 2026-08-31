@@ -1,7 +1,6 @@
-import { Link, usePage } from "@/lib/inertia";
-import type { AuthProps } from "@/types";
-import { user_sessions } from "@/routes";
-import { Logo, LogoIcon } from "@/components/Logo";
+import { Link, usePage } from '@/lib/inertia';
+import { user_sessions } from '@/routes';
+import { Logo, LogoIcon } from '@/components/Logo';
 import {
   Home,
   Building2,
@@ -12,7 +11,7 @@ import {
   Settings,
   LogOut,
   type LucideIcon,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -25,26 +24,26 @@ import {
   SidebarMenuItem,
   SidebarRail,
   useSidebar,
-} from "@/components/ui/sidebar";
+} from '@/components/ui/sidebar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
 // Navigation items
 const mainNav: { name: string; href: string; icon: LucideIcon }[] = [
-  { name: "Dashboard", href: "/", icon: Home },
-  { name: "Organizations", href: "/organizations", icon: Building2 },
-  { name: "Contacts", href: "/contacts", icon: Users },
-  { name: "Users", href: "/users", icon: User },
-  { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Organizations', href: '/organizations', icon: Building2 },
+  { name: 'Contacts', href: '/contacts', icon: Users },
+  { name: 'Users', href: '/users', icon: User },
+  { name: 'Reports', href: '/reports', icon: BarChart3 },
 ];
 
 export function AppSidebar() {
-  const { props, url } = usePage<AuthProps>();
+  const { props, url } = usePage();
   const { user, account } = props;
   const { state } = useSidebar();
 
@@ -55,7 +54,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild className="group-data-[collapsible=icon]:!p-0">
               <Link href="/">
-                {state === "collapsed" ? (
+                {state === 'collapsed' ? (
                   <LogoIcon className="h-5 w-5 text-primary" />
                 ) : (
                   <Logo variant="light" />
@@ -73,9 +72,7 @@ export function AppSidebar() {
                 <span className="flex h-5 w-5 items-center justify-center rounded bg-primary/10 text-xs font-semibold text-primary">
                   {account.name?.[0]?.toUpperCase()}
                 </span>
-                <span className="flex-1 truncate text-left font-medium">
-                  {account.name}
-                </span>
+                <span className="flex-1 truncate text-left font-medium">{account.name}</span>
                 <ChevronsUpDown className="h-4 w-4 text-sidebar-foreground/50" />
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -88,14 +85,13 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNav.map((item) => {
-                const isActive =
-                  item.href === "/" ? url === "/" : url.startsWith(item.href);
+                const isActive = item.href === '/' ? url === '/' : url.startsWith(item.href);
 
                 return (
                   <SidebarMenuItem key={item.name}>
                     <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
                       <Link href={item.href}>
-                        <item.icon className={isActive ? "text-primary" : ""} />
+                        <item.icon className={isActive ? 'text-primary' : ''} />
                         <span>{item.name}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -115,20 +111,14 @@ export function AppSidebar() {
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton size="lg" tooltip={user.name}>
                     {user.photo ? (
-                      <img
-                        src={user.photo}
-                        alt=""
-                        className="h-6 w-6 rounded-full object-cover"
-                      />
+                      <img src={user.photo} alt="" className="h-6 w-6 rounded-full object-cover" />
                     ) : (
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
                         {user.firstName?.[0]}
                         {user.lastName?.[0]}
                       </span>
                     )}
-                    <span className="flex-1 truncate text-left font-medium">
-                      {user.name}
-                    </span>
+                    <span className="flex-1 truncate text-left font-medium">{user.name}</span>
                     <ChevronsUpDown className="h-4 w-4 text-sidebar-foreground/50" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
@@ -151,10 +141,7 @@ export function AppSidebar() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link
-                      href={user_sessions.delete()}
-                      className="cursor-pointer"
-                    >
+                    <Link href={user_sessions.delete()} className="cursor-pointer">
                       <LogOut className="mr-2 h-4 w-4" />
                       Sign out
                     </Link>

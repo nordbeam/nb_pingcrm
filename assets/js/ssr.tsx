@@ -1,106 +1,58 @@
-import React, { createElement } from "react";
-import ReactDOMServer from "react-dom/server";
-import { createInertiaApp } from "@inertiajs/react";
-import { ModalStackProvider } from "@/lib/inertia";
+import ReactDOMServer from 'react-dom/server';
+import { createInertiaApp } from '@/lib/inertia';
+import type { ComponentType } from 'react';
 
-// Import layouts
-import AppLayout from "./layouts/AppLayout";
-import GuestLayout from "./layouts/GuestLayout";
+type PageModule = {
+  default: ComponentType<Record<string, unknown>>;
+};
 
 /**
- * SSR entry point
+ * Development SSR entry point with on-demand page loading
  *
- * This file exports a `render` function that is called by:
- * - Development: nb-vite's SSR endpoint (Vite Module Runner)
- * - Production: DenoRider (embedded Deno runtime)
- *
- * Uses eager loading to bundle all pages into the SSR bundle.
- *
- * IMPORTANT: The setup function must use the same render-function-as-children
- * pattern as app.tsx to ensure hydration works correctly. Modal components
- * are not rendered during SSR (they're client-side only), but the structure
- * must match.
+ * Creates the page map once at module level, then only loads
+ * the specific requested page on each render.
  */
+// Lazy loading - create import functions once at module level
+const pages = import.meta.glob<PageModule>('./pages/**/*.tsx');
 
-// Eager load all pages for SSR
-const pages = import.meta.glob("./pages/**/*.tsx", { eager: true });
-
-// Define which pages use which layout
-const guestPages = [
-  "Auth/Login",
-  "Auth/Register",
-  "Auth/ForgotPassword",
-  "Auth/ResetPassword",
-];
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function render(page: any) {
+  if (page?.component === '__nb_inertia_healthcheck__') {
+    return { head: [], body: '' };
+  }
+
   return await createInertiaApp({
     page,
     render: ReactDOMServer.renderToString,
-    resolve: (name) => {
-      const path = `./pages/${name}.tsx`;
-      const module = pages[path] as { default: React.ComponentType & { layout?: (page: React.ReactNode) => React.ReactNode } };
+    // Inertia v3: resolve receives (name, props)
+    resolve: async (name, _props) => {
+      const pagePath = `./pages/${name}.tsx`;
 
-      if (!module) {
+      if (!pages[pagePath]) {
+        // List available pages for debugging
         const availablePages = Object.keys(pages)
-          .map((p) => p.replace("./pages/", "").replace(".tsx", ""))
+          .map((p) => p.replace('./pages/', '').replace('.tsx', ''))
           .sort();
 
         throw new Error(
-          `SSR Page Not Found\n\n` +
+          `❌ SSR Page Not Found\n\n` +
             `Component: ${name}\n` +
             `Expected file: assets/js/pages/${name}.tsx\n\n` +
+            `This page file doesn't exist or wasn't found by Vite's glob.\n\n` +
+            `Common causes:\n` +
+            `• The file hasn't been created yet\n` +
+            `• The file name doesn't match the component name\n` +
+            `• The file has the wrong extension\n` +
+            `• The component name in your controller doesn't match the file path\n\n` +
             `Available pages (${availablePages.length}):\n` +
-            availablePages.map((p) => `  - ${p}`).join("\n")
+            availablePages.map((p) => `  - ${p}`).join('\n'),
         );
       }
 
-      const pageComponent = module.default;
-
-      // Apply layout if not already defined
-      if (!pageComponent.layout) {
-        if (guestPages.includes(name)) {
-          pageComponent.layout = (page: React.ReactNode) => <GuestLayout>{page}</GuestLayout>;
-        } else {
-          pageComponent.layout = (page: React.ReactNode) => <AppLayout>{page}</AppLayout>;
-        }
-      }
-
-      return module;
+      // Dynamically import only the requested page
+      const pageModule = await pages[pagePath]();
+      return pageModule.default;
     },
-    setup: ({ App, props }) => {
-      // Use the same render-function-as-children pattern as app.tsx
-      // This ensures hydration works correctly
-      const renderInertiaApp = ({ Component, props: pageProps, key }: any) => {
-        const renderComponent = () => {
-          const child = createElement(Component, { key, ...pageProps });
-
-          // Handle layouts
-          if (typeof Component.layout === 'function') {
-            return Component.layout(child);
-          }
-
-          if (Array.isArray(Component.layout)) {
-            return Component.layout
-              .concat(child)
-              .reverse()
-              .reduce((children: any, Layout: any) => createElement(Layout, pageProps, children));
-          }
-
-          return child;
-        };
-
-        // During SSR, we only render the page component
-        // Modal components (InitialModalHandler, ModalStackRenderer) are client-side only
-        // They will be rendered during hydration
-        return renderComponent();
-      };
-
-      return (
-        <ModalStackProvider>
-          <App {...props}>{renderInertiaApp}</App>
-        </ModalStackProvider>
-      );
-    },
+    setup: ({ App, props }) => <App {...props} />,
   });
 }

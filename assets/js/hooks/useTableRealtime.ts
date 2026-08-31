@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
-import { socket, useChannel } from "@/lib/socket";
+import { useState, useCallback, useEffect } from 'react';
+import { socket, useChannel } from '@/lib/socket';
 
 interface UseTableRealtimeOptions<T> {
   initialData: T[];
@@ -50,9 +50,7 @@ export function useTableRealtime<T extends { id: number }>({
     [updateEvent]: (payload: any) => {
       const record = payload[recordKey] as T;
       if (record) {
-        setData((prev) =>
-          prev.map((item) => (item.id === record.id ? record : item))
-        );
+        setData((prev) => prev.map((item) => (item.id === record.id ? record : item)));
         highlightRecord(record.id);
       }
     },

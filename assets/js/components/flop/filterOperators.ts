@@ -7,18 +7,18 @@ import type { FlopOperator, FilterFieldType } from './types';
 export const OPERATOR_LABELS: Record<string, string> = {
   '==': 'is',
   '!=': 'is not',
-  'ilike': 'contains',
-  'not_ilike': 'does not contain',
-  'like': 'contains (case-sensitive)',
-  'not_like': 'does not contain (case-sensitive)',
-  'empty': 'is empty',
-  'not_empty': 'is not empty',
+  ilike: 'contains',
+  not_ilike: 'does not contain',
+  like: 'contains (case-sensitive)',
+  not_like: 'does not contain (case-sensitive)',
+  empty: 'is empty',
+  not_empty: 'is not empty',
   '>': 'greater than',
   '<': 'less than',
   '>=': 'at least',
   '<=': 'at most',
-  'in': 'is any of',
-  'not_in': 'is none of',
+  in: 'is any of',
+  not_in: 'is none of',
   '=~': 'matches',
 };
 
@@ -69,7 +69,7 @@ export function getOperatorsForType(type: FilterFieldType): FlopOperator[] {
  */
 export function formatFilterValue(
   value: unknown,
-  options?: { value: string | number; label: string }[]
+  options?: { value: string | number; label: string }[],
 ): string {
   if (value === null || value === undefined || value === '') {
     return '(empty)';

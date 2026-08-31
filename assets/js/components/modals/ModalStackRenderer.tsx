@@ -6,23 +6,9 @@
  */
 
 import { Suspense, useState, useCallback } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
-import {
-  HeadlessModal,
-  ModalPageProvider,
-  useModalStack,
-} from '@nordbeam/nb-inertia/react/modals';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { HeadlessModal, ModalPageProvider, useModalStack } from '@nordbeam/nb-inertia/react/modals';
 import type { ModalConfig } from '@nordbeam/nb-inertia/react/modals';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 

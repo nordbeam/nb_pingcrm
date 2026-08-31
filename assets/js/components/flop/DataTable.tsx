@@ -66,7 +66,7 @@ export function DataTable<TData, TValue>({
 
   const contextValue = React.useMemo(
     () => ({ onSortChange, getSortDirection }),
-    [onSortChange, getSortDirection]
+    [onSortChange, getSortDirection],
   );
 
   const getRowClassName = (row: Row<TData>) => {
@@ -78,15 +78,12 @@ export function DataTable<TData, TValue>({
 
   return (
     <DataTableContext.Provider value={contextValue}>
-      <div className={cn("overflow-hidden", className)}>
+      <div className={cn('overflow-hidden', className)}>
         <table className="w-full text-sm">
           {/* Header */}
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr
-                key={headerGroup.id}
-                className="border-b border-border"
-              >
+              <tr key={headerGroup.id} className="border-b border-border">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
@@ -94,10 +91,7 @@ export function DataTable<TData, TValue>({
                   >
                     {header.isPlaceholder
                       ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
                 ))}
               </tr>
@@ -112,34 +106,25 @@ export function DataTable<TData, TValue>({
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
                   className={cn(
-                    "transition-colors",
-                    "hover:bg-accent/50",
-                    "data-[state=selected]:bg-accent",
-                    index !== table.getRowModel().rows.length - 1 && "border-b border-border",
-                    onRowClick && "cursor-pointer",
-                    getRowClassName(row)
+                    'transition-colors',
+                    'hover:bg-accent/50',
+                    'data-[state=selected]:bg-accent',
+                    index !== table.getRowModel().rows.length - 1 && 'border-b border-border',
+                    onRowClick && 'cursor-pointer',
+                    getRowClassName(row),
                   )}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-4 py-3 align-middle text-foreground"
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                    <td key={cell.id} className="px-4 py-3 align-middle text-foreground">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
                 </tr>
               ))
             ) : (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-12 text-center"
-                >
+                <td colSpan={columns.length} className="px-4 py-12 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <EmptyIcon className="h-8 w-8 text-muted-foreground/50" />
                     <p className="text-sm text-muted-foreground">
@@ -152,11 +137,7 @@ export function DataTable<TData, TValue>({
           </tbody>
 
           {/* Footer */}
-          {footer && (
-            <tfoot className="border-t border-border bg-muted/30">
-              {footer(table)}
-            </tfoot>
-          )}
+          {footer && <tfoot className="border-t border-border bg-muted/30">{footer(table)}</tfoot>}
         </table>
       </div>
     </DataTableContext.Provider>

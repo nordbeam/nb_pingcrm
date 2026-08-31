@@ -1,4 +1,4 @@
-import { AlertTriangle, RotateCcw } from "lucide-react";
+import { AlertTriangle, RotateCcw } from 'lucide-react';
 
 interface DeletedNoticeProps {
   entityName: string;
@@ -11,9 +11,7 @@ export function DeletedNotice({ entityName, onRestore }: DeletedNoticeProps) {
       <div className="flex items-start gap-3">
         <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm text-foreground font-medium">
-            This {entityName} has been deleted
-          </p>
+          <p className="text-sm text-foreground font-medium">This {entityName} has been deleted</p>
           <button
             type="button"
             onClick={onRestore}

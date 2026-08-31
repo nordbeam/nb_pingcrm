@@ -1,11 +1,10 @@
-import { Head, usePage, ClientModalLink, useModalStack } from "@/lib/inertia";
-import type { ContactsIndexProps } from "@/types";
-import type { TableResource } from "@/components/flop";
-import { Table } from "@/components/flop";
-import { contacts as contactsRoutes } from "@/routes";
-import { ContactFormSkeleton } from "@/components/ContactFormSkeleton";
-import { useTableRealtime } from "@/hooks/useTableRealtime";
-import { CircleDot } from "lucide-react";
+import { Head, usePageProps, ClientModalLink, useModalStack } from '@/lib/inertia';
+import type { TableResource } from '@/components/flop';
+import { Table } from '@/components/flop';
+import { contacts as contactsRoutes } from '@/routes';
+import { ContactFormSkeleton } from '@/components/ContactFormSkeleton';
+import { useTableRealtime } from '@/hooks/useTableRealtime';
+import { CircleDot } from 'lucide-react';
 
 interface Contact {
   id: number;
@@ -25,18 +24,18 @@ interface Contact {
 }
 
 export default function ContactsIndex() {
-  const { props } = usePage<ContactsIndexProps>();
+  const props = usePageProps('Contacts/Index');
   const { visitModal } = useModalStack();
   const contacts = props.contacts as TableResource<Contact>;
 
   // Real-time updates
   const { data, isHighlighted } = useTableRealtime<Contact>({
     initialData: contacts.data,
-    topic: "crm:contacts",
-    createEvent: "contact_created",
-    updateEvent: "contact_updated",
-    deleteEvent: "contact_deleted",
-    recordKey: "contact",
+    topic: 'crm:contacts',
+    createEvent: 'contact_created',
+    updateEvent: 'contact_updated',
+    deleteEvent: 'contact_deleted',
+    recordKey: 'contact',
   });
 
   return (
@@ -61,7 +60,7 @@ export default function ContactsIndex() {
               <ClientModalLink
                 href={contactsRoutes.new()}
                 loadingComponent={ContactFormSkeleton}
-                modalConfig={{ slideover: true, position: "right" }}
+                modalConfig={{ slideover: true, position: 'right' }}
                 prefetch
               >
                 <button className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
@@ -77,20 +76,18 @@ export default function ContactsIndex() {
             baseUrl="/contacts"
             rowClassName={(row) => {
               const classes: string[] = [];
-              if (row.deletedAt) classes.push("bg-muted/50 opacity-60");
+              if (row.deletedAt) classes.push('bg-muted/50 opacity-60');
               if (isHighlighted(row.id)) {
-                classes.push(
-                  "animate-pulse bg-primary/10 ring-1 ring-primary/20"
-                );
+                classes.push('animate-pulse bg-primary/10 ring-1 ring-primary/20');
               }
-              return classes.join(" ");
+              return classes.join(' ');
             }}
             onRowClick={(row) => {
               visitModal(contactsRoutes.edit(row.id));
             }}
-            renderCell={(column, value, row) => {
+            renderCell={(column, _value, row) => {
               // Custom rendering for name with delete indicator
-              if (column.key === "name") {
+              if (column.key === 'name') {
                 return (
                   <div>
                     <div className="font-medium">{row.name}</div>
@@ -102,17 +99,15 @@ export default function ContactsIndex() {
               }
 
               // Custom rendering for organization
-              if (column.key === "organizationName") {
+              if (column.key === 'organizationName') {
                 if (!row.organizationName) return null;
-                return (
-                  <span className="text-muted-foreground">{row.organizationName}</span>
-                );
+                return <span className="text-muted-foreground">{row.organizationName}</span>;
               }
 
               // Custom rendering for location
-              if (column.key === "city") {
+              if (column.key === 'city') {
                 const parts = [row.city, row.region].filter(Boolean);
-                return parts.length > 0 ? parts.join(", ") : null;
+                return parts.length > 0 ? parts.join(', ') : null;
               }
 
               return undefined; // Use default rendering
@@ -120,7 +115,7 @@ export default function ContactsIndex() {
           />
 
           <div className="mt-3 text-xs text-muted-foreground">
-            {data.length} contact{data.length !== 1 ? "s" : ""} total
+            {data.length} contact{data.length !== 1 ? 's' : ''} total
           </div>
         </div>
       </div>

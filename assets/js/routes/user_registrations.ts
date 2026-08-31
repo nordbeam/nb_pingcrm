@@ -1,4 +1,4 @@
-import { route, type Route, type RouteOptions, type Param } from './lib/wayfinder';
+import { route } from './lib/wayfinder';
 
 /**
  * GET /users/register

@@ -1,6 +1,5 @@
-defmodule NbPingcrmWeb.PageController do
+defmodule NbPingcrmWeb.HomeController do
   use NbPingcrmWeb, :controller
-  use NbInertia.Controller
 
   alias NbPingcrm.{Accounts, Activities, CRM}
   alias NbPingcrmWeb.InertiaShared.Auth

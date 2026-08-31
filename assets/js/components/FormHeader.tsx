@@ -1,7 +1,7 @@
-import { Link } from "@/lib/inertia";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft } from "lucide-react";
-import type { Route } from "@/routes";
+import { Link } from '@/lib/inertia';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft } from 'lucide-react';
+import type { Route } from '@/routes';
 
 interface FormHeaderProps {
   title: string;

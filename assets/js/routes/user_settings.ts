@@ -1,4 +1,4 @@
-import { route, type Route, type RouteOptions, type Param } from './lib/wayfinder';
+import { route, type Param } from './lib/wayfinder';
 
 /**
  * GET /users/settings
@@ -10,7 +10,7 @@ const index = route('/users/settings', 'get');
  * GET /users/settings/confirm-email/:token
  * @action :show
  */
-const show = route<{ token: Param }>('/users/settings/confirm-email/:token', 'get');
+const show = route<{ token: Param }, 'get'>('/users/settings/confirm-email/:token', 'get');
 
 /**
  * PUT /users/settings
