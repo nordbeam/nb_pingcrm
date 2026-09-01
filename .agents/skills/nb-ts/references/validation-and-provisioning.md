@@ -17,8 +17,16 @@ mix nb_ts.download_tsgo --platforms darwin-arm64,linux-arm64
 mix nb_ts.download_tsgo --all
 ```
 
-`TSGO_VERSION` or `--version` selects a release intentionally; do not use an
-unreviewed moving URL. For a build image that manages the compiler itself:
+`TSGO_PLATFORMS` overrides `--platforms`/`--all`; do not pass `--all` together
+with `--platforms`. The built-in release has pinned SHA-256 digests for every
+supported platform. NbTs verifies the archive before extraction and records an
+integrity manifest for the binary plus required `lib*.d.ts` files. Extraction
+accepts only expected root-level runtime entries; installation is staged and
+locked so an activation failure restores the previous runtime. A custom
+`TSGO_VERSION`/`--version` must select exactly one platform and provide a trusted
+`--sha256 HEX` or `TSGO_SHA256`; never use an unreviewed moving artifact.
+
+For a build image that manages the compiler itself:
 
 ```elixir
 config :nb_ts, :tsgo_binary_path, "/opt/tooling/tsgo"
@@ -83,8 +91,13 @@ tsc --noEmit
 ## Recovery
 
 1. Read the first validation diagnostic and identify its generated source file.
-2. If it says the binary is missing, provision the detected platform explicitly
-   or set `:tsgo_binary_path`; no pool restart or automatic download is needed.
+2. If the managed runtime is missing, incomplete, or corrupt, run
+   `mix nb_ts.download_tsgo --force` for the detected platform. A checksum
+   mismatch fails before extraction and preserves the previous runtime. Use
+   `:tsgo_binary_path` only for an executable managed and trusted elsewhere.
+   If provisioning reports a stale install lock, first verify that no other
+   provisioning process is active, then remove only the reported lock directory
+   and retry.
 3. If types are missing or stale, run `mix compile --force`, confirm optional
    companion packages are loaded, and rerun `mix nb_ts.gen --validate`.
 4. If output names or imports changed after an upgrade, generate into a clean
