@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vp build",
-    "build:client": "vite build",
+    "build:client": "vp build",
     "build:ssr": "vp build --ssr",
     "build:budget": "vp build && vp build --ssr && node scripts/check-bundle-size.mjs",
     "bundle:budget": "node scripts/check-bundle-size.mjs",
@@ -21,7 +21,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@inertiajs/react": "^3.7.0",
-    "@nordbeam/nb-inertia": "git+https://github.com/nordbeam/nb_inertia.git#1343304ba83583f697f3b7cfde6be423c4d31ed6",
+    "@nordbeam/nb-inertia": "git+https://github.com/nordbeam/nb_inertia.git#410b71351a16c56f7cc4ed5d38f4ddc2e30891e2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",
@@ -79,7 +79,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@nordbeam/nb-vite": "git+https://github.com/nordbeam/nb_vite.git#b523cf75f795baae8b34a41cf7650f6ef5d0b8db",
+    "@nordbeam/nb-vite": "git+https://github.com/nordbeam/nb_vite.git#133bfb7357d7c34a9b05e939ed2c4d7ee71d59fb",
     "@types/phoenix": "^1.6.7",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",

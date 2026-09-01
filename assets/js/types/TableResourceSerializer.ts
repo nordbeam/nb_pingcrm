@@ -4,9 +4,9 @@ import type { TableState } from './TableStateSerializer';
 import type { TableFilter } from './TableFilterSerializer';
 import type { TableColumn } from './TableColumnSerializer';
 import type { TableAction } from './TableActionSerializer';
-import type { TableViews } from './TableViewsSerializer';
 import type { TableBulkAction } from './TableBulkActionSerializer';
 import type { TableEmptyState } from './TableEmptyStateSerializer';
+import type { TableViews } from './TableViewsSerializer';
 export interface TableResource {
   actions: Array<TableAction>;
   bulkActions: Array<TableBulkAction>;

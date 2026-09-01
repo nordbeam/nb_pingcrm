@@ -78,7 +78,7 @@ defmodule NbPingcrm.MixProject do
        github: "nordbeam/nb_vite", ref: "133bfb7357d7c34a9b05e939ed2c4d7ee71d59fb", override: true},
       {:nb_inertia,
        github: "nordbeam/nb_inertia",
-       ref: "5213e3f82598e8eff7d3777a34de9249a4e97231",
+       ref: "410b71351a16c56f7cc4ed5d38f4ddc2e30891e2",
        override: true},
       {:nb_routes,
        github: "nordbeam/nb_routes",
@@ -86,10 +86,10 @@ defmodule NbPingcrm.MixProject do
        override: true},
       {:nb_serializer,
        github: "nordbeam/nb_serializer",
-       ref: "7a8a506541e044c2051831ec705c92cd31f344da",
+       ref: "62ebc8db4eec02b5e02540229557687786ac6116",
        override: true},
       {:nb_ts,
-       github: "nordbeam/nb_ts", ref: "7ce935c272a6eb04f8888ee7eca5a255421eacc4", override: true},
+       github: "nordbeam/nb_ts", ref: "0e359b39263bcb055d17caaabbad5ef99cb8d1ff", override: true},
       {:nb_flop,
        github: "nordbeam/nb_flop", ref: "538a44c99ed2699eff76e0fff1e64b16180299bd", override: true},
       {:flop, "~> 0.28"},
@@ -137,7 +137,8 @@ defmodule NbPingcrm.MixProject do
         "test --include feature"
       ],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"],
-      "ts.gen": ["nb_ts.gen"]
+      "ts.gen": ["nb_ts.gen --format"],
+      "ts.validate": ["nb_ts.download_tsgo", "nb_ts.gen --format --validate"]
     ]
   end
 end

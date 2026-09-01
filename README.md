@@ -18,6 +18,18 @@ corepack npm@12.0.2 run types:check
 corepack npm@12.0.2 run build:budget
 ```
 
+From the project root, regenerate the NbTs contracts with Vite+ formatting, or
+provision the pinned `tsgo` binary and validate the final generated output:
+
+```bash
+mix ts.gen
+mix ts.validate
+```
+
+Neither command installs frontend packages. Run the npm 12 install above first
+so the project-local `vp` formatter is available. CI also fails when generation
+would change a committed file under `assets/js/types`.
+
 `build:budget` builds the client and SSR bundles, then checks the initial
 Inertia CSS/JavaScript graph and SSR gzip sizes against absolute limits and the
 checked-in baseline. After reviewing an intentional size change, update that
